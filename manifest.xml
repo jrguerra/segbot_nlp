@@ -1,0 +1,19 @@
+<package>
+  <description brief="segbot_nlp">
+
+     segbot_nlp
+
+  </description>
+  <author>NLPROS (Senior Design Group)</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/segbot_nlp</url>
+  <depend package="geometry_msgs"/>
+  <depend package="move_base_msgs"/>
+  <depend package="actionlib"/>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+</package>
+
+

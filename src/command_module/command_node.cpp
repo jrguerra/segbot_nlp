@@ -1,73 +1,105 @@
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "geometry_msgs/PoseStamped.h"
-#include "geometry_msgs/Twist.h"
-#include "geometry_msgs/PoseWithCovarianceStamped.h"
-#include <iostream>
+#include <ros/ros.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
+#include "segbot_nlp/VoiceCommand.h"
+#include <queue>
 
-// --screen
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
-void amclHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
-	float x = msg->pose.pose.position.x;
-	float y = msg->pose.pose.position.y;
-	float z = msg->pose.pose.position.z;
+typedef ros::NodeHandle NodeHandle;
+typedef ros::Publisher Publisher;
+typedef ros::Subscriber Subscriber;
 
-	float i = msg->pose.pose.orientation.x;
-	float j = msg->pose.pose.orientation.y;
-	float k = msg->pose.pose.orientation.z;
-	float w = msg->pose.pose.orientation.w;
+std::queue<move_base_msgs::MoveBaseGoal> GoalFifo;
+void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
+	/**
+	int opcode = msg->commandCode;
+	int distance = msg->distance;
+	int angle = msg->angle;
+	int location = msg->location;
+	int numTimes = msg->numTimes;
+	**/
 
-	ROS_INFO("X:%f Y:%f Z:%f I:%f J:%f K:%f W:%f", x, y, z, i, j, k, w);
-}
+	// above are the components of the voice command message
+	// we will take these in order to make a new goal for our robot
+	move_base_msgs::MoveBaseGoal newGoal; // this is the goal to add to the software fifo here!
 
-int main(int argc, char** argv) {
-	ros::init(argc, argv, "command_module");
-	ros::NodeHandle n;
-
-	ros::Publisher chatter_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
-
-	ros::Subscriber sub = n.subscribe("amcl_pose", 1000, amclHandler);
-
-	ros::Rate loop_rate(10);
-
-	int count = 0;
-//	int x;
-	geometry_msgs::PoseStamped p;
-
-	geometry_msgs::Twist x;
-
-	x.linear.x = 20;
-	x.angular.z = 0;
-
-	chatter_pub.publish(x);
-	while (ros::ok()) {
-		//std:cin >> x;
-	//	ROS_INFO("I am alive. Sending out move_base_simple/goal");
-
-/*
-		p.header.seq = count;
-		p.header.frame_id = "1";
-
-		p.pose.position.x = 10;
-		p.pose.position.y = 10;
-		p.pose.position.z = 0;
-
-		//p.pose.orientation.x = 0;
-		//p.pose.orientation.y = 0;
-		p.pose.orientation.z = 0.5;
-
-		p.pose.orientation.w = 0.5;
-*/
-		geometry_msgs::Twist x;
-		x.linear.x = 0.1;
-		x.angular.z = 0;
-
-		chatter_pub.publish(x);
- 
-
-		ros::spinOnce();
-		loop_rate.sleep();
+	switch(msg->commandCode) {
+		default:
+			break;
 	}
 
-	return 0;
 }
+
+
+int main(int argc, char** argv){
+  ros::init(argc, argv, "command_module");
+
+  //tell the action client that we want to spin a thread by default
+  MoveBaseClient ac("move_base", true);
+  NodeHandle handler;
+ // Subscriber s = handler.subscribe("command_message", 1000, messageHandle);
+
+   ROS_INFO("** Command Moudule: On-line");
+  
+
+  //wait for the action server to come up
+  while(!ac.waitForServer(ros::Duration(5.0))){
+    ROS_INFO("Waiting for the move_base action server to come up");
+  }
+
+  move_base_msgs::MoveBaseGoal goal;
+
+  //we'll send a goal to the robot to move 1 meter forward
+
+  ros::Rate loop_rate(10);
+  while (1) {
+
+	if (!GoalFifo.empty()) {
+		goal = GoalFifo.front();
+		goal.target_pose.header.stamp = ros::Time::now();
+
+		ROS_INFO("** Command Module: Sending Goal");
+	
+		ac.sendGoal(goal);
+
+		ac.waitForResult();
+
+		if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+			ROS_INFO("** Command Module: Goal Succeeded");
+		} else {
+			ROS_INFO("** Command Module: Failure! Shutting Down!");
+			return 0;
+		}
+
+		GoalFifo.pop();
+	}
+
+	ros::spinOnce();
+	loop_rate.sleep();
+  }
+	
+
+  return 0;
+}
+
+/*	
+  goal.target_pose.header.frame_id = "/map";
+  goal.target_pose.header.stamp = ros::Time::now();
+
+  goal.target_pose.pose.position.x = 1.0;
+  goal.target_pose.pose.orientation.w = 1.0;
+
+  ROS_INFO("Sending goal");
+  ac.sendGoal(goal);
+
+  ac.waitForResult();
+
+  if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    ROS_INFO("Hooray, the base moved 1 meter forward");
+  else
+    ROS_INFO("The base failed to move forward 1 meter for some reason");
+
+  return 0;
+}*/
+
