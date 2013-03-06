@@ -1,0 +1,5 @@
+<launch>
+  <node name="command_node" pkg="segbot_nlp" type="command_node" />
+  <node name="debug_command_node_tester" pkg="segbot_nlp" type="debug_command_node_tester" />
+
+</launch>
