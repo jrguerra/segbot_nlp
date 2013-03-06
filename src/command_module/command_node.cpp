@@ -2,30 +2,64 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include "segbot_nlp/VoiceCommand.h"
-#include <queue>
+#include "segbot_nlp/VoiceCommandTypes.h"
+#include <queue> 
+#include <cmath>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
-
 typedef ros::NodeHandle NodeHandle;
 typedef ros::Publisher Publisher;
-typedef ros::Subscriber Subscriber;
+typedef ros::Subscriber Subscriber; 
+typedef move_base_msgs::MoveBaseGoal MoveBaseGoal;
+
+#define PI 3.14159
+
+enum FrameType {MAP_FRAME, ROBOT_FRAME}; 
+// map will mape the movement to a location on the map
+// robot will map the movement to the current location of the robot
+
+void debug_fill_fifo(void); // fills the fifo as a test with three or four commands
+MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w);
 
 std::queue<move_base_msgs::MoveBaseGoal> GoalFifo;
 void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
-	/**
 	int opcode = msg->commandCode;
-	int distance = msg->distance;
-	int angle = msg->angle;
+	float distance = (float) msg->distance;
+	float angle = (float) msg->angle;
 	int location = msg->location;
 	int numTimes = msg->numTimes;
-	**/
 
-	// above are the components of the voice command message
-	// we will take these in order to make a new goal for our robot
-	move_base_msgs::MoveBaseGoal newGoal; // this is the goal to add to the software fifo here!
+	// angle calculations	
+	float z = sin((angle * PI)/360.00);
+	float w = cos((angle * PI)/360.00);
 
-	switch(msg->commandCode) {
-		default:
+	MoveBaseGoal newGoal;
+
+	switch (opcode) {
+		case RETURN:
+			break;
+
+		case MOVE:
+			newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, z, w);
+			GoalFifo.push(newGoal);
+
+			newGoal = createGoal(ROBOT_FRAME, distance, 0.0, 0.0, 1.0);
+			GoalFifo.push(newGoal);
+			break;			
+
+		case TURN:
+			newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, z, w);
+			GoalFifo.push(newGoal);
+			break;
+
+		case STOP:
+			break;
+
+		case GOTO:
+			//newGoal = createGoal(MAP_FRAME, );
+			break;
+
+		defualt:
 			break;
 	}
 
@@ -44,16 +78,17 @@ int main(int argc, char** argv){
   
 
   //wait for the action server to come up
-  while(!ac.waitForServer(ros::Duration(5.0))){
+  while(!ac.waitForServer(ros::Duration(5.0)) && ros::ok()){
     ROS_INFO("Waiting for the move_base action server to come up");
   }
 
   move_base_msgs::MoveBaseGoal goal;
+  debug_fill_fifo();
 
   //we'll send a goal to the robot to move 1 meter forward
 
   ros::Rate loop_rate(10);
-  while (1) {
+  while (ros::ok()) {
 
 	if (!GoalFifo.empty()) {
 		goal = GoalFifo.front();
@@ -73,6 +108,8 @@ int main(int argc, char** argv){
 		}
 
 		GoalFifo.pop();
+	} else {
+		ROS_INFO("** Command Module: FIFO is EMPTY");
 	}
 
 	ros::spinOnce();
@@ -83,13 +120,52 @@ int main(int argc, char** argv){
   return 0;
 }
 
-/*	
-  goal.target_pose.header.frame_id = "/map";
-  goal.target_pose.header.stamp = ros::Time::now();
+void debug_fill_fifo(void) {
+	MoveBaseGoal goal;
+	goal = createGoal(ROBOT_FRAME, 0.0, 0.0, 1.0, 0.0);
+	GoalFifo.push(goal);
 
-  goal.target_pose.pose.position.x = 1.0;
-  goal.target_pose.pose.orientation.w = 1.0;
+	goal = createGoal(ROBOT_FRAME, 0.0, 0.0, 1.41, 1.41);
+	GoalFifo.push(goal);
 
+	goal = createGoal(MAP_FRAME, 4.0, 4.0, 1.41, 1.41);
+	GoalFifo.push(goal);
+
+	goal = createGoal(ROBOT_FRAME, 0.0, 0.0, 0.0, 1.0);
+	GoalFifo.push(goal);
+}  
+		
+MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w) {
+	MoveBaseGoal goal;
+
+	float val2 = (z*z) + (w*w);
+
+	if ((val2 != 1)) {
+		ROS_INFO("** Command Module: Inapproriate Goal asked for");
+		//return NULL;
+	}
+	
+	if (frame == MAP_FRAME) {
+		goal.target_pose.header.frame_id = "/map";
+	} else if (frame == ROBOT_FRAME) {
+		goal.target_pose.header.frame_id = "/base_link";
+	}
+
+ 	//goal.target_pose.header.stamp = ros::Time::now();
+
+  	goal.target_pose.pose.position.x = x;
+	goal.target_pose.pose.position.y = y;
+	goal.target_pose.pose.position.z = 0.0;
+
+	goal.target_pose.pose.orientation.x = 0.0;
+	goal.target_pose.pose.orientation.y = 0.0;
+	goal.target_pose.pose.orientation.z = z;
+	goal.target_pose.pose.orientation.w = w;
+
+	return goal;
+}
+
+/*
   ROS_INFO("Sending goal");
   ac.sendGoal(goal);
 
