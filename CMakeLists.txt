@@ -23,8 +23,15 @@ rosbuild_genmsg()
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/command_module/command_node.cpp)
+
+rosbuild_add_library(PugiXML src/linguistic_tree/pugixml.cpp)
+rosbuild_add_library(LinguisticElement src/linguistic_tree/LinguisticElement.cpp)
+rosbuild_add_library(LinguisticStructures src/linguistic_tree/LinguisticStructures.cpp)
+rosbuild_add_library(LinguisticTree src/linguistic_tree/LinguisticTree.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 rosbuild_add_executable(command_node src/command_module/command_node.cpp)
+rosbuild_add_executable(debug_command_node_tester src/debug/debug_command_node_tester.cpp)
+
 #target_link_libraries(example ${PROJECT_NAME})

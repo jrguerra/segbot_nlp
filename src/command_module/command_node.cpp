@@ -24,8 +24,8 @@ MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w);
 std::queue<move_base_msgs::MoveBaseGoal> GoalFifo;
 void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 	int opcode = msg->commandCode;
-	float distance = (float) msg->distance;
-	float angle = (float) msg->angle;
+	float distance = msg->distance;
+	float angle = msg->angle;
 	int location = msg->location;
 	int numTimes = msg->numTimes;
 
