@@ -1,6 +1,6 @@
 <launch>
   <node name="command_node" pkg="segbot_nlp" type="command_node" />
   <node name="debug_command_node_tester" pkg="segbot_nlp" type="debug_command_node_tester" />
-  <node name="gspeech.py" pkg="gspeech" type="gspeech" />
+  <node name="gspeech" pkg="gspeech" type="gspeech.py" />
   <node name="interpreter" pkg="segbot_nlp" type="interpreter" />
 </launch>
