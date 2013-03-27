@@ -83,7 +83,7 @@ int main(int argc, char** argv){
   }
 
   move_base_msgs::MoveBaseGoal goal;
-  //debug_fill_fifo();
+  debug_fill_fifo();
 
   //we'll send a goal to the robot to move 1 meter forward
 

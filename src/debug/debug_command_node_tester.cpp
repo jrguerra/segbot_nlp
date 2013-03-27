@@ -19,11 +19,19 @@ int main(int argc, char **argv) {
    * a unique string for each message.
    */
   while (ros::ok()) {
+    float meters = 0.0;
+    float degrees = 0.0;
+    std::cout << "Type in Meters:";
+    std::cin >> meters;
+    std::cout << "Type in Degrees:";
+    std::cin >> degrees;
 
     segbot_nlp::VoiceCommand msg;
     msg.commandCode = MOVE;
-    msg.distance = 1;
-    msg.angle = 0;
+    msg.distance = meters;
+    msg.angle = degrees;
+
+    chatter_pub.publish(msg);
 
   }
 
