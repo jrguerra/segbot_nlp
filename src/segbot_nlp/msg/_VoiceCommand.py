@@ -6,18 +6,18 @@ import struct
 
 
 class VoiceCommand(genpy.Message):
-  _md5sum = "3f928abb425ceda8389063403b3f9534"
+  _md5sum = "51e183b5913c1e0ba7d85f2ea691620f"
   _type = "segbot_nlp/VoiceCommand"
   _has_header = False #flag to mark the presence of a Header object
   _full_text = """int32 commandCode
 float32 distance
 float32 angle
-int32 location
+int32 loc
 int32 numTimes
 string commandText
 
 """
-  __slots__ = ['commandCode','distance','angle','location','numTimes','commandText']
+  __slots__ = ['commandCode','distance','angle','loc','numTimes','commandText']
   _slot_types = ['int32','float32','float32','int32','int32','string']
 
   def __init__(self, *args, **kwds):
@@ -28,7 +28,7 @@ string commandText
     changes.  You cannot mix in-order arguments and keyword arguments.
 
     The available fields are:
-       commandCode,distance,angle,location,numTimes,commandText
+       commandCode,distance,angle,loc,numTimes,commandText
 
     :param args: complete set of field values, in .msg order
     :param kwds: use keyword arguments corresponding to message field names
@@ -43,8 +43,8 @@ string commandText
         self.distance = 0.
       if self.angle is None:
         self.angle = 0.
-      if self.location is None:
-        self.location = 0
+      if self.loc is None:
+        self.loc = 0
       if self.numTimes is None:
         self.numTimes = 0
       if self.commandText is None:
@@ -53,7 +53,7 @@ string commandText
       self.commandCode = 0
       self.distance = 0.
       self.angle = 0.
-      self.location = 0
+      self.loc = 0
       self.numTimes = 0
       self.commandText = ''
 
@@ -70,7 +70,7 @@ string commandText
     """
     try:
       _x = self
-      buff.write(_struct_i2f2i.pack(_x.commandCode, _x.distance, _x.angle, _x.location, _x.numTimes))
+      buff.write(_struct_i2f2i.pack(_x.commandCode, _x.distance, _x.angle, _x.loc, _x.numTimes))
       _x = self.commandText
       length = len(_x)
       if python3 or type(_x) == unicode:
@@ -90,7 +90,7 @@ string commandText
       _x = self
       start = end
       end += 20
-      (_x.commandCode, _x.distance, _x.angle, _x.location, _x.numTimes,) = _struct_i2f2i.unpack(str[start:end])
+      (_x.commandCode, _x.distance, _x.angle, _x.loc, _x.numTimes,) = _struct_i2f2i.unpack(str[start:end])
       start = end
       end += 4
       (length,) = _struct_I.unpack(str[start:end])
@@ -113,7 +113,7 @@ string commandText
     """
     try:
       _x = self
-      buff.write(_struct_i2f2i.pack(_x.commandCode, _x.distance, _x.angle, _x.location, _x.numTimes))
+      buff.write(_struct_i2f2i.pack(_x.commandCode, _x.distance, _x.angle, _x.loc, _x.numTimes))
       _x = self.commandText
       length = len(_x)
       if python3 or type(_x) == unicode:
@@ -134,7 +134,7 @@ string commandText
       _x = self
       start = end
       end += 20
-      (_x.commandCode, _x.distance, _x.angle, _x.location, _x.numTimes,) = _struct_i2f2i.unpack(str[start:end])
+      (_x.commandCode, _x.distance, _x.angle, _x.loc, _x.numTimes,) = _struct_i2f2i.unpack(str[start:end])
       start = end
       end += 4
       (length,) = _struct_I.unpack(str[start:end])

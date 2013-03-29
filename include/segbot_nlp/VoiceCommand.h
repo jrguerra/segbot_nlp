@@ -25,7 +25,7 @@ struct VoiceCommand_ {
   : commandCode(0)
   , distance(0.0)
   , angle(0.0)
-  , location(0)
+  , loc(0)
   , numTimes(0)
   , commandText()
   {
@@ -35,7 +35,7 @@ struct VoiceCommand_ {
   : commandCode(0)
   , distance(0.0)
   , angle(0.0)
-  , location(0)
+  , loc(0)
   , numTimes(0)
   , commandText(_alloc)
   {
@@ -50,8 +50,8 @@ struct VoiceCommand_ {
   typedef float _angle_type;
   float angle;
 
-  typedef int32_t _location_type;
-  int32_t location;
+  typedef int32_t _loc_type;
+  int32_t loc;
 
   typedef int32_t _numTimes_type;
   int32_t numTimes;
@@ -88,12 +88,12 @@ template<class ContainerAllocator>
 struct MD5Sum< ::segbot_nlp::VoiceCommand_<ContainerAllocator> > {
   static const char* value() 
   {
-    return "3f928abb425ceda8389063403b3f9534";
+    return "51e183b5913c1e0ba7d85f2ea691620f";
   }
 
   static const char* value(const  ::segbot_nlp::VoiceCommand_<ContainerAllocator> &) { return value(); } 
-  static const uint64_t static_value1 = 0x3f928abb425ceda8ULL;
-  static const uint64_t static_value2 = 0x389063403b3f9534ULL;
+  static const uint64_t static_value1 = 0x51e183b5913c1e0bULL;
+  static const uint64_t static_value2 = 0xa7d85f2ea691620fULL;
 };
 
 template<class ContainerAllocator>
@@ -113,7 +113,7 @@ struct Definition< ::segbot_nlp::VoiceCommand_<ContainerAllocator> > {
     return "int32 commandCode\n\
 float32 distance\n\
 float32 angle\n\
-int32 location\n\
+int32 loc\n\
 int32 numTimes\n\
 string commandText\n\
 \n\
@@ -138,7 +138,7 @@ template<class ContainerAllocator> struct Serializer< ::segbot_nlp::VoiceCommand
     stream.next(m.commandCode);
     stream.next(m.distance);
     stream.next(m.angle);
-    stream.next(m.location);
+    stream.next(m.loc);
     stream.next(m.numTimes);
     stream.next(m.commandText);
   }
@@ -164,8 +164,8 @@ struct Printer< ::segbot_nlp::VoiceCommand_<ContainerAllocator> >
     Printer<float>::stream(s, indent + "  ", v.distance);
     s << indent << "angle: ";
     Printer<float>::stream(s, indent + "  ", v.angle);
-    s << indent << "location: ";
-    Printer<int32_t>::stream(s, indent + "  ", v.location);
+    s << indent << "loc: ";
+    Printer<int32_t>::stream(s, indent + "  ", v.loc);
     s << indent << "numTimes: ";
     Printer<int32_t>::stream(s, indent + "  ", v.numTimes);
     s << indent << "commandText: ";

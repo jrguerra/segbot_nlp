@@ -26,7 +26,7 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 	int opcode = msg->commandCode;
 	float distance = msg->distance;
 	float angle = msg->angle;
-	int location = msg->location;
+	int location = msg->loc;
 	int numTimes = msg->numTimes;
 
 	// angle calculations	

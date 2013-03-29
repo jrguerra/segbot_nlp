@@ -28,27 +28,13 @@ namespace NLP{
                     LinguisticElement* element;
 
                 public:
-                    //Gets the next linguistic element in the tree (preorder)
                     virtual LinguisticTree::Node* getNext()=0;
-                    //Get the previous elemenent
                     virtual LinguisticTree::Node* getPrev();
                     virtual LinguisticElement* getElement();
                     virtual LinguisticTree::Node* getSelectChild( int index )=0;
                     virtual int addChild( LinguisticTree::Node* child )=0;
-                    virtual unsigned int getNumChildren()=0;
                     bool setParent( LinguisticTree::Node* parent );
-                    LinguisticTree::Node* getParent(){ return parent; }
-
-                    LinguisticTree::Node* getNextSibling();
-                    LinguisticTree::Node* getPrevSibling();
-                    virtual LinguisticTree::Node* getFirstChild(){ return NULL; }
-
-                    int getParentIndex(){ return parentIndex; }
-
-                protected:
-                    LinguisticTree::Node* forceNext();
-                public:
-                    virtual LinguisticTree::Node* getRightMostDecendent() = 0;
+                    LinguisticTree::Node* getParent();
             };
             class PhraseNode:public LinguisticTree::Node{
                 public:
@@ -63,12 +49,6 @@ namespace NLP{
                     virtual LinguisticTree::Node* getNext();
                     virtual LinguisticTree::Node* getSelectChild( int index );
                     virtual int addChild( LinguisticTree::Node* child );
-                    virtual unsigned int getNumChildren();
-
-                    virtual LinguisticTree::Node* getFirstChild();
-
-                protected:
-                    virtual LinguisticTree::Node* getRightMostDecendent();
             };
             class WordNode:public LinguisticTree::Node{
                 public:
@@ -86,14 +66,10 @@ namespace NLP{
                     virtual LinguisticTree::Node* getSelectChild( int index );
                     virtual int addChild( LinguisticTree::Node* child );
                     const char* getWord(){ return ((Word*) element)->getText(); }
-                    virtual unsigned int getNumChildren();
 
                     void addGoverned( int i );
                     void addDependent( int i );
                     void addCoreference( const NLP::CoreferenceIdentifier& coreference );
-
-                protected:
-                    virtual LinguisticTree::Node* getRightMostDecendent();
             };
 
             Node* head;
@@ -114,19 +90,14 @@ namespace NLP{
                     ~Iterator();
 
                 private:
-                    Iterator( LinguisticTree::Node* n, LinguisticTree* tree );
-                    Iterator( LinguisticTree* tree );
                     LinguisticTree::Node* node;
-                    LinguisticTree* tree;
-
-                    friend class LinguisticTree;
 
                 public:
                     friend bool operator ==( const Iterator& reference1, const Iterator& reference2 ){
-                        return reference1.node == reference2.node && reference1.tree == reference2.tree;
+                        return reference1.node == reference2.node;
                     }
                     friend bool operator !=( const Iterator& reference1, const Iterator& reference2 ){
-                        return reference1.node != reference2.node || reference1.tree != reference2.tree;
+                        return reference1.node != reference2.node;
                     }
                     Iterator& operator=( const Iterator& reference );
 
@@ -134,28 +105,11 @@ namespace NLP{
                     //TODO overload ->
                     Iterator& operator ++();
                     Iterator& operator --();
-                    Iterator operator++(int);
-                    Iterator operator--(int);
 
-                    unsigned int getNumChildren();
-                    Iterator getNextSibling();
-                    Iterator getPrevSibling();
-                    Iterator getFirstChild();
-                    Iterator getChild(int index);
-                    Iterator getParent();
-                    int getParentIndex(){
-                        return node->getParentIndex();
-                    }
-                    Iterator getNextWord();
-                    Iterator getPrevWord();
-                    Iterator getEnd(){ return tree->end(); }
+
             };
             friend class LinguisticTree::Iterator;
 
-            LinguisticTree::Iterator begin();
-            LinguisticTree::Iterator end();
-
-            LinguisticTree::Iterator word( unsigned int index );
 
     };
 }

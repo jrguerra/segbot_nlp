@@ -23,26 +23,9 @@ namespace NLP{
         adverb, advComp, advSuper,
 
         //phrase types
-        sentence, nounPhrase, verbPhrase, prepPhrase, subClause,
+        sentence, nounPhrase, verbPhrase, prepPhrase, advPhrase, subClause,
 
         numTypes, unrecognizedType
-    };
-
-    class Assistant{
-        private:
-            Assistant();
-
-            static std::map< std::string, NLP::type > typeMap;
-            static std::map< std::string, NLP::Dependency::type > depMap;
-
-        public:
-            static void init();
-            static bool isInit();
-
-            static type getType( const char* partOfSpeech );
-            static Dependency::type getDependency( const char* depAbbrev );
-
-            static bool isWord( NLP::type lingType );
     };
 
     /**
@@ -142,6 +125,8 @@ namespace NLP{
 
         prepPhrase: short for preposition phrase. PP maps to prepPhrase
 
+        advPhrase: short for adverb Phrase. ADVP maps to advPhrase
+
         subClause: short for subordinate clause. SBAR maps to subClause
 
         numTypes: holds the number of values for NLP::type
@@ -149,6 +134,23 @@ namespace NLP{
         @remarks Please consult the StanfordNLP documentation for more info
             regarding these linguistic types.
     **/
+
+    class Assistant{
+        private:
+            Assistant();
+
+            static std::map< std::string, NLP::type > typeMap;
+            static std::map< std::string, NLP::Dependency::type > depMap;
+
+        public:
+            static void init();
+            static bool isInit();
+
+            static type getType( const char* partOfSpeech );
+            static Dependency::type getDependency( const char* depAbbrev );
+
+            static bool isWord( NLP::type lingType );
+    };
 
     class LinguisticElement{
         public:
@@ -186,6 +188,7 @@ namespace NLP{
 
             char* getText(){ return word; }
 
+            unsigned int getID(){ return id; }
     };
 
 }

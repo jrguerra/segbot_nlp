@@ -265,7 +265,7 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
         switch( command->baseType ){
             case FC_move:
                 //if no direction set, set it
-                if( command->dir != D_noSet ){
+                if( command->dir == D_noSet ){
                     command->dir = D_moveDefault;
                 }
                 //if this move does not have a location
@@ -281,8 +281,8 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
                 break;
             case FC_turn:
                 //if no direction set, set it
-                if( command->dir != D_noSet ){
-                    command->dir = D_turnDefault;
+		if( command->dir == D_noSet ){
+			command->dir = D_turnDefault;
                 }
                 //if this does not have a location
                 if( command->loc == L_noSet ){

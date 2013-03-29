@@ -25,7 +25,7 @@ namespace NLP{
 
     class Dependency{
         public:
-            enum type{ first, unrecognizedType };
+            enum type{ abbrev, advmod, numTypes, unrecognizedType };
 
             Dependency( Dependency::type identification, int governor, int dependent );
 

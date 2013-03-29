@@ -1,0 +1,2 @@
+loc:0 dist:0 ang:-90 num:0 hst:0
+loc:0 dist:0 ang:90 num:0 hst:0
