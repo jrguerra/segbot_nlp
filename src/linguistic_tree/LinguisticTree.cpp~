@@ -69,6 +69,7 @@ NLP::LinguisticTree::LinguisticTree( const char* filename ){
         pugi::xml_node parsing = tokens.next_sibling();
         if( parsing.empty() ) return;
         parseData( parsing.first_child().value(), currentSentenceID );
+        //cout<<parsing.first_child().value();
 
         //Handle Dependencies
         //grab the basic dependencies node
@@ -148,7 +149,7 @@ NLP::LinguisticTree::~LinguisticTree(){
 
 void NLP::LinguisticTree::parseData( const char* data, int sentenceID ){
     //get a copy of the data for destructive purposes;
-    char* dataCopy = new char[ strlen(data) + 1 ];
+    char* dataCopy = new char[ strlen(data) ];
     strcpy( dataCopy, data );
 
     //set's an iterator to the first word in the current sentence
@@ -223,26 +224,11 @@ NLP::LinguisticTree::Node::~Node(){
 
 NLP::LinguisticElement* NLP::LinguisticTree::Node::getElement(){ return element; }
 
-NLP::LinguisticTree::Node* NLP::LinguisticTree::Node::forceNext(){
-    //recursive next function
-    //if no parent then we're done
-    if( parent == NULL ) return NULL;
-    //get next sibling
-    NLP::LinguisticTree::Node* sibling = parent->getSelectChild( parentIndex+1 );
-    if( sibling != NULL ){
-        return sibling;
-    }
-    //if the sibling doesn't exist return parent's next sibling
-    return parent->forceNext();
-}
-
 NLP::LinguisticTree::Node* NLP::LinguisticTree::Node::getPrev(){
     //if the node doesn't have a parent
     if(parent == NULL) return NULL;
-    //if it is the first child then the parent is the previous node
-    if( parentIndex == 0 ) return parent;
-    //otherwise return the rightmost decendent of the previous sibling
-    return parent->getSelectChild( parentIndex - 1 )->getRightMostDecendent();
+    //otherwise return the parents previous child
+    return parent->getSelectChild( parentIndex-1 );
 }
 
 bool NLP::LinguisticTree::Node::setParent( NLP::LinguisticTree::Node* parent ){
@@ -252,19 +238,9 @@ bool NLP::LinguisticTree::Node::setParent( NLP::LinguisticTree::Node* parent ){
     this->parent = parent;
     if( parent != NULL ){
         parentIndex = parent->addChild( this );
-        if( parentIndex != LINGUISTIC_CHILD_ADD_FAILURE ){
-            return 1;
-        }
+        return 1;
     }
     return 0;
-}
-
-NLP::LinguisticTree::Node* NLP::LinguisticTree::Node::getNextSibling(){
-    return parent->getSelectChild( parentIndex + 1 );
-}
-
-NLP::LinguisticTree::Node* NLP::LinguisticTree::Node::getPrevSibling(){
-    return parent->getSelectChild( parentIndex - 1 );
 }
 
 NLP::LinguisticTree::PhraseNode::PhraseNode(){}
@@ -284,39 +260,31 @@ NLP::LinguisticTree::PhraseNode::~PhraseNode(){
 NLP::LinguisticTree::Node* NLP::LinguisticTree::PhraseNode::getNext(){
     //if a child exists
     if( children.size() ){
-        //return the first child
         return children[0];
     }
-    //otherwise force the next sibling
-    return forceNext();
+    //if the node has no parents or children
+    if( parent == NULL ) return NULL;
+    //otherwise request the parent's next child
+    return parent->getSelectChild( parentIndex+1 );
 }
 
 NLP::LinguisticTree::Node* NLP::LinguisticTree::PhraseNode::getSelectChild( int index ){
-    //if the requested index is too small or too large retun NULL
-    if( ((unsigned int) index) >= children.size() ) return NULL;
+    //if the requested index is too small
+    if( index < 0 ) return this;
+    //if the requested iterator is too large
+    if( (unsigned int) index >= children.size() ){
+        //check if it has a parent
+        if( parent == NULL ) return NULL;
+        //then get the parents next child
+        return parent->getSelectChild( parentIndex+1 );
+    }
     //otherwise return the select child
     return children[index];
-}
-
-NLP::LinguisticTree::Node* NLP::LinguisticTree::PhraseNode::getRightMostDecendent(){
-    //if no children
-    if( children.size() == 0 ) return this;
-    //otherwise return the rightmost descendent of the rightmost child
-    NLP::LinguisticTree::Node* lastChild = children.back();
-    return lastChild->getRightMostDecendent();
-}
-
-unsigned int NLP::LinguisticTree::PhraseNode::getNumChildren(){
-    return children.size();
 }
 
 int NLP::LinguisticTree::PhraseNode::addChild( NLP::LinguisticTree::Node* child ){
     children.push_back(child);
     return children.size()-1;
-}
-
-NLP::LinguisticTree::Node* NLP::LinguisticTree::PhraseNode::getFirstChild(){
-    return children[0];
 }
 
 NLP::LinguisticTree::WordNode::WordNode(){}
@@ -326,21 +294,15 @@ NLP::LinguisticTree::WordNode::WordNode( NLP::LinguisticTree::Node* parent, Word
 NLP::LinguisticTree::WordNode::~WordNode(){}
 
 NLP::LinguisticTree::Node* NLP::LinguisticTree::WordNode::getNext(){
-    return forceNext();
+    //if the node has no parent
+    if( parent == NULL ) return NULL;
+    //otherwise request the parent's next child
+    return parent->getSelectChild( parentIndex+1 );
 }
 
 NLP::LinguisticTree::Node* NLP::LinguisticTree::WordNode::getSelectChild( int index ){
     return NULL;
 }
-
-unsigned int NLP::LinguisticTree::WordNode::getNumChildren(){
-    return 0;
-}
-
-NLP::LinguisticTree::Node* NLP::LinguisticTree::WordNode::getRightMostDecendent(){
-    //since the wordNode hasno children, it is it's rightmost decendent
-    return this;
-};
 
 int NLP::LinguisticTree::WordNode::addChild( NLP::LinguisticTree::Node* child ){
     return LINGUISTIC_CHILD_ADD_FAILURE;
@@ -358,21 +320,16 @@ void NLP::LinguisticTree::WordNode::addCoreference( const NLP::CoreferenceIdenti
     coreferences.push_back( coreference );
 }
 
-NLP::LinguisticTree::Iterator::Iterator():node(NULL),tree(NULL){}
+NLP::LinguisticTree::Iterator::Iterator():node(NULL){}
 
-NLP::LinguisticTree::Iterator::Iterator( const Iterator& reference ):node( reference.node ),tree(reference.tree){}
+NLP::LinguisticTree::Iterator::Iterator( const Iterator& reference ):node( reference.node ){}
 
 NLP::LinguisticTree::Iterator::~Iterator(){}
 
-NLP::LinguisticTree::Iterator::Iterator(NLP::LinguisticTree::Node* node, NLP::LinguisticTree* tree ):node(node), tree(tree){}
-
 NLP::LinguisticTree::Iterator& NLP::LinguisticTree::Iterator::operator=( const NLP::LinguisticTree::Iterator& reference ){
     node = reference.node;
-    tree = reference.tree;
     return *this;
 }
-
-NLP::LinguisticTree::Iterator::Iterator( NLP::LinguisticTree* tree ):node(NULL),tree(tree){}
 
 NLP::LinguisticElement* NLP::LinguisticTree::Iterator::operator*(){
     if( node == NULL ) return NULL;
@@ -391,72 +348,4 @@ NLP::LinguisticTree::Iterator& NLP::LinguisticTree::Iterator::operator--(){
         node = node->getPrev();
     }
     return *this;
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::operator++(int){
-    NLP::LinguisticTree::Iterator result(node, tree);
-    if( node != NULL ){
-        node = node->getNext();
-    }
-    return result;
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::operator--(int){
-    NLP::LinguisticTree::Iterator result(node, tree);
-    if( node != NULL ){
-        node = node->getPrev();
-    }
-    return result;
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::begin(){
-    return LinguisticTree::Iterator( head, this );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::end(){
-    return LinguisticTree::Iterator( NULL, this );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::word( unsigned int index ){
-    if( index >= words.size() ) return end();
-    return NLP::LinguisticTree::Iterator( words[index], this );
-}
-
-unsigned int NLP::LinguisticTree::Iterator::getNumChildren(){
-    if( node == NULL ) return -1;
-    return node->getNumChildren();
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getNextSibling(){
-    if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
-    return NLP::LinguisticTree::Iterator( node->getNextSibling(), tree );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getPrevSibling(){
-    if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
-    return NLP::LinguisticTree::Iterator( node->getPrevSibling(), tree );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getFirstChild(){
-    if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
-    return NLP::LinguisticTree::Iterator( node->getFirstChild(), tree );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getChild( int index ){
-    if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
-    return NLP::LinguisticTree::Iterator( node->getSelectChild( index ), tree );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getParent(){
-    if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
-    return NLP::LinguisticTree::Iterator( node->getParent(), tree );
-}
-
-NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getNextWord(){
-    if( tree == NULL ) return getEnd();
-    //if the iterator isn't on a word, return failure
-    if( !NLP::Assistant::isWord( node->getElement()->getType() ) ) return tree->end();
-    //get the index of the next word
-    unsigned int index = ( (NLP::Word*) (node->getElement()) )->getID() + 1;
-    return tree->word( index );
 }

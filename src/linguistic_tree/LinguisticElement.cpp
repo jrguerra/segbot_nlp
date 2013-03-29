@@ -52,8 +52,11 @@ void NLP::Assistant::init(){
     typeMap["NP"] = NLP::nounPhrase;
     typeMap["VP"] = NLP::verbPhrase;
     typeMap["PP"] = NLP::prepPhrase;
+    typeMap["ADVP"] = NLP::advPhrase;
     typeMap["SBAR"] = NLP::subClause;
-    //TODO defMap;
+    //TODO depMap;
+    depMap["abbrev"] = NLP::Dependency::abbrev;
+    depMap["advmod"] = NLP::Dependency::advmod;
 }
 
 bool NLP::Assistant::isInit(){
@@ -70,6 +73,11 @@ NLP::type NLP::Assistant::getType( const char* partOfSpeech ){
 }
 
 NLP::Dependency::type NLP::Assistant::getDependency( const char* depAbbrev ){
+    try{
+        return depMap.at( depAbbrev );
+    }catch( std::out_of_range oor ){
+        return NLP::Dependency::unrecognizedType;
+    }
     return NLP::Dependency::unrecognizedType;
 }
 
