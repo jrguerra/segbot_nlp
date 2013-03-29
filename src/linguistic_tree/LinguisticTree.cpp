@@ -182,9 +182,9 @@ char* NLP::LinguisticTree::depthTravel( NLP::LinguisticTree::Node* element, char
         data += paren + 1;
 
         char linguisticType[7];
-        int space = strcspn( data, " " );
-        strncpy( linguisticType, data, space );
-        linguisticType[ space ] = 0;
+        int spaceOrParen = strcspn( data, " (" );
+        strncpy( linguisticType, data, spaceOrParen );
+        linguisticType[ spaceOrParen ] = 0;
 
         //make sure the type exists
         NLP::type lingType = NLP::Assistant::getType( linguisticType );
