@@ -12,6 +12,8 @@ NLP::LinguisticTree::LinguisticTree():head(NULL){
 NLP::LinguisticTree::LinguisticTree( const char* filename ){
     head = new NLP::LinguisticTree::PhraseNode( NULL, NLP::LinguisticElement::getRoot() );
 
+    cout << "Process of Making a Tree has Begun" << endl;
+
     //make sure the typeMap is initiated
     if( !NLP::Assistant::isInit() ){
         NLP::Assistant::init();
@@ -185,6 +187,10 @@ char* NLP::LinguisticTree::depthTravel( NLP::LinguisticTree::Node* element, char
         int spaceOrParen = strcspn( data, " (" );
         strncpy( linguisticType, data, spaceOrParen );
         linguisticType[ spaceOrParen ] = 0;
+        // Debugging stuff
+        cout << data << endl;
+        cout << linguisticType << endl;
+
 
         //make sure the type exists
         NLP::type lingType = NLP::Assistant::getType( linguisticType );

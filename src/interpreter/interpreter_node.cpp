@@ -17,9 +17,10 @@ ros::Publisher commandPublish;
 void chatterCallback(const std_msgs::String::ConstPtr& msg) {
   ROS_INFO("Received filename: [%s]", msg->data.c_str());
   
-/*
   NLP::LinguisticTree tree(msg->data.c_str());
+  ROS_INFO("** Interpreter Created Valid Treee");
   std::list<CommandVector> commands = Interpreter::interpret(tree);
+  ROS_INFO("** Interpreter Interpreted Valid Tree");
   std::cerr << commands.size() << '\n';
   
   for (std::list<CommandVector>::iterator i = commands.begin(); i != commands.end(); ++i) {
@@ -40,7 +41,10 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
     c.numTimes = i->repetitions;
     commandPublish.publish(c); 
   }
-*/
+
+/**
+// This is code for using Jacob's testing script lti6.pl
+// This script performs a similiar functionality as Craig's.  
   std::string str = "perl /nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/lti6.pl \"";
   str.append(msg->data.c_str());
   str.append("\"");
@@ -86,6 +90,8 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
   }
 
   file.close();
+*/
+
 }
 
 int main(int argc, char **argv)
