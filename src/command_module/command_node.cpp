@@ -56,10 +56,11 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 			break;
 
 		case GOTO:
-			//newGoal = createGoal(MAP_FRAME, );
+                        newGoal = createGoal(MAP_FRAME, LocationPoints[location].x, LocationPoints[location].y, 0.0, 1.0);
+			GoalFifo.push(newGoal);
 			break;
 
-		defualt:
+		default:
 			break;
 	}
 
@@ -83,7 +84,7 @@ int main(int argc, char** argv){
   }
 
   move_base_msgs::MoveBaseGoal goal;
-  debug_fill_fifo();
+  //debug_fill_fifo();
 
   //we'll send a goal to the robot to move 1 meter forward
 

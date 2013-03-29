@@ -2,57 +2,7 @@
 use warnings;
 use strict;
 
-## SCRAPER ##
-my $URLtoPostTo = "http://nlp.stanford.edu:8080/corenlp/";
-
-my $input = <STDIN>;
-
-my %Fields = (
-   "outputFormat" => "xml",
-   "input" => "$input",
-);
-
-my $BrowserName = "";
-
-use Digest::MD5  qw(md5_hex);
-use LWP::UserAgent;
-use HTTP::Request::Common;
-##use lib ("HTML-FormatText-WithLinks-0.14/lib");
-use HTML::FormatText::WithLinks;
-
-# Create the browser that will post the information.
-my $Browser = new LWP::UserAgent;
-
-# Insert the browser name, if specified.
-if($BrowserName) { $Browser->agent($BrowserName); }
-
-# Post the information to the CGI program.
-my $Page = $Browser->request(POST $URLtoPostTo,\%Fields);
-
-my $name = "";
-# Print the returned page (or an error message).
-if ($Page->is_success) { 
-	my $output = $Page->content;
-	my $f = HTML::FormatText::WithLinks->new();
-	$output = $f->parse($output);
-	$output =~ s/.*?(<.xml.*<\/root>).*/$1/sg;
-	$output =~ s/^\s\s\s//mg;
-	$output =~ /(<parse>.*<\/parse>)/s;
-	my $parseseg = $1;
-	$parseseg =~ s/\n//sg;
-	$output =~ s/<parse>.*<\/parse>/$parseseg/sg;
-	$output = $output."\n";
-	$name = "/nishome/nlpros/ros/rosbuild_ws/segbot_nlp/src/debug/test.xml";
-	open my $FILE, ">", $name;
-	print $FILE $output;
-	close $FILE;
-	##print `realpath $name`;
-	
-}
-else { print $Page->message; }
-
-# end of script
-
+my $name = $ARGV[0];
 
 #Global Variables
 my %tokens = ();
@@ -873,8 +823,8 @@ sub FormatCommand {
 			return;
 		}	
 	
-		my $retVal = "loc:$loc dist:$dist ang:$angle num:$numt hst:$hist";
-		print "$retVal\n";
+		my $retVal = "$loc $dist $angle $numt $hist";
+		##print "$retVal\n";
 		return $retVal;
 	}	
 }

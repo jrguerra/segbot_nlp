@@ -4,6 +4,11 @@
 #ifndef VOICE_COMMAND_TYPE_H
 #define VOICE_COMMAND_TYPE_H
 
+struct Point {
+	float x;
+	float y;
+};
+
 enum CommandCode {
 	RETURN,
 	MOVE,
@@ -12,19 +17,30 @@ enum CommandCode {
 	GOTO
 };
 
-#define CURRENT_MAP "bwi_test_world"
+#define CURRENT_MAP 0 // this is the bwi test world map
 
+#if CURRENT_MAP == 0
+#define NUM_MAP_POINTS 3 // three map points for this map
 enum LocationCode {
 	BOOKCASE,
-	DOOR,
+	WALL,
 	HALL
 };
 
-struct Point {
-	float x;
-	float y;
+char* LocationStrings[NUM_MAP_POINTS] = {
+        "bookcase",
+        "wall",
+        "hallway"
 };
 
+Point LocationPoints[NUM_MAP_POINTS] = {
+       {-1.5, -1.0},
+       {2.0, -1.0},
+       {0.0, 5.0}
+};
+
+
+#endif
 
 
 #endif
