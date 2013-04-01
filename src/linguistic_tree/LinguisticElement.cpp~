@@ -1,25 +1,3 @@
-/**	@name LinguisticElement.cpp
-  *
-  *
-  *
-  *	@author		C. Daniel LaBar
-  *	Date Created:
-  *	@date		2013-03-29
-  *	Version Info:
-  *	@version	1.00.00
-  *	@date		2013-03-29
-  *
-  *	Version History:
-  *	@version	0.01.00
-  *	@date		2013-03-29
-  *	File creation
-  *	@version	1.00.00
-  *	@date		2013-03-30
-  * @author Joe Martinez
-  *	Dependency Map has been initialized
-  * in NLP::Assistant::init
-  *
-**/
 #include "LinguisticElement.h"
 #include <cstdlib>
 #include <cstring>
@@ -75,63 +53,10 @@ void NLP::Assistant::init(){
     typeMap["VP"] = NLP::verbPhrase;
     typeMap["PP"] = NLP::prepPhrase;
     typeMap["ADVP"] = NLP::advPhrase;
-    typeMap["ADJP"] = NLP::adjPhrase;
     typeMap["SBAR"] = NLP::subClause;
-    typeMap["PRT"] = NLP::phrasalVerbPart;
     //TODO depMap;
     depMap["abbrev"] = NLP::Dependency::abbrev;
-    depMap["acomp"] = NLP::Dependency::acomp;
-    depMap["advel"] = NLP::Dependency::advel;
     depMap["advmod"] = NLP::Dependency::advmod;
-    depMap["agent"] = NLP::Dependency:: agent;
-    depMap["amod"] = NLP::Dependency:: amod;
-    depMap["appos"] = NLP::Dependency:: appos;
-    depMap["attr"] = NLP::Dependency:: attr;
-    depMap["aux"] = NLP::Dependency:: aux;
-    depMap["auxpass"] = NLP::Dependency:: auxpass;
-    depMap["cc"] = NLP::Dependency:: cc;
-    depMap["ccomp"] = NLP::Dependency:: ccomp;
-    depMap["complm"] = NLP::Dependency:: complm;
-    depMap["conj"] = NLP::Dependency:: conj;
-    depMap["cop"] = NLP::Dependency:: cop;
-    depMap["csubj"] = NLP::Dependency:: csubj;
-    depMap["csubjpass"] = NLP::Dependency:: csubjpass;
-    depMap["dep"] = NLP::Dependency:: unrecognizedType;
-    depMap["det"] = NLP::Dependency:: det;
-    depMap["dobj"] = NLP::Dependency:: dobj;
-    depMap["expl"] = NLP::Dependency:: expl;
-    depMap["infmod"] = NLP::Dependency:: infmod;
-    depMap["iobj"] = NLP::Dependency:: iobj;
-    depMap["mark"] = NLP::Dependency:: mark;
-    depMap["mwe"] = NLP::Dependency:: mwe;
-    depMap["neg"] = NLP::Dependency:: neg;
-    depMap["nn"] = NLP::Dependency:: nn;
-    depMap["npadvmod"] = NLP::Dependency:: npadvmod;
-    depMap["nsubj"] = NLP::Dependency:: nsubj;
-    depMap["nsubjpass"] = NLP::Dependency:: nsubjpass;
-    depMap["num"] = NLP::Dependency:: num;
-    depMap["number"] = NLP::Dependency:: number;
-    depMap["parataxis"] = NLP::Dependency:: parataxis;
-    depMap["partmod"] = NLP::Dependency:: partmod;
-    depMap["pcomp"] = NLP::Dependency:: pcomp;
-    depMap["pobj"] = NLP::Dependency:: pobj;
-    depMap["poss"] = NLP::Dependency:: poss;
-    depMap["possessive"] = NLP::Dependency:: possessive;
-    depMap["preconj"] = NLP::Dependency:: preconj;
-    depMap["predet"] = NLP::Dependency:: predet;
-    depMap["prep"] = NLP::Dependency:: prep;
-    depMap["prepc"] = NLP::Dependency:: prepc;
-    depMap["prt"] = NLP::Dependency:: prt;
-    depMap["punct"] = NLP::Dependency:: punct;
-    depMap["purpcl"] = NLP::Dependency:: purpcl;
-    depMap["quantmod"] = NLP::Dependency:: quantmod;
-    depMap["remod"] = NLP::Dependency:: remod;
-    depMap["ref"] = NLP::Dependency:: refer;
-    depMap["rel"] = NLP::Dependency:: rel;
-    depMap["root"] = NLP::Dependency:: root;
-    depMap["tmod"] = NLP::Dependency:: tmod;
-    depMap["xcomp"] = NLP::Dependency:: xcomp;
-    depMap["xsubj"] = NLP::Dependency:: xsubj;
 }
 
 bool NLP::Assistant::isInit(){
@@ -168,12 +93,8 @@ NLP::LinguisticElement* NLP::LinguisticElement::getRoot(){
     return new NLP::LinguisticElement( NLP::root );
 }
 
-NLP::LinguisticElement* NLP::LinguisticElement::getUnrecognized(){
-    return new NLP::LinguisticElement( NLP::unrecognizedType );
-}
-
 NLP::LinguisticElement* NLP::LinguisticElement::getPhrase( NLP::type lingType ){
-    if( lingType < NLP::sentence || lingType > NLP::phrasalVerbPart ){
+    if( lingType < NLP::sentence || lingType > NLP::subClause ){
         return NULL;
     }
     return new NLP::LinguisticElement( lingType );
