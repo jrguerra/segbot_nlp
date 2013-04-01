@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     std::cin >> degrees;
 
     segbot_nlp::VoiceCommand msg;
-    msg.commandCode = MOVE;
+    msg.commandCode = 0; // this is RC_move
     msg.distance = meters;
     msg.angle = degrees;
 

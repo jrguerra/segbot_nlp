@@ -8,7 +8,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-
+#include <cstdio>
 /**
  * This tutorial demonstrates simple receipt of messages over the ROS system.
  */
@@ -19,6 +19,8 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
   
   NLP::LinguisticTree tree(msg->data.c_str());
   ROS_INFO("** Interpreter Created Valid Treee");
+  remove(msg->data.c_str());
+  
   std::list<CommandVector> commands = Interpreter::interpret(tree);
   ROS_INFO("** Interpreter Interpreted Valid Tree");
   std::cerr << commands.size() << '\n';
@@ -26,7 +28,13 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
   for (std::list<CommandVector>::iterator i = commands.begin(); i != commands.end(); ++i) {
     segbot_nlp::VoiceCommand c;
     c.commandCode = i->trueType;
-    c.distance = i->distance;
+    
+    if (i->distance < 0) {
+        c.distance = 0.00;
+    } else {
+      c.distance = i->distance;
+    }
+
     if (i->dir == D_backward) {
         c.angle = 180.00;
     } else if (i->dir == D_right) {
@@ -41,7 +49,7 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
     c.numTimes = i->repetitions;
     commandPublish.publish(c); 
   }
-
+  
 /**
 // This is code for using Jacob's testing script lti6.pl
 // This script performs a similiar functionality as Craig's.  

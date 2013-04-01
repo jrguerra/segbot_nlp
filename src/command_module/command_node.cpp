@@ -3,6 +3,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include "segbot_nlp/VoiceCommand.h"
 #include "segbot_nlp/VoiceCommandTypes.h"
+#include "Interpreter.h"
 #include <queue> 
 #include <cmath>
 
@@ -21,6 +22,14 @@ enum FrameType {MAP_FRAME, ROBOT_FRAME};
 void debug_fill_fifo(void); // fills the fifo as a test with three or four commands
 MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w);
 
+float calcZ(float angle, float sign) {
+    return sin((sign * angle * PI)/360.00);
+}
+
+float calcW(float angle, float sign) {
+    return cos((sign * angle * PI)/360.00);
+}
+
 std::queue<move_base_msgs::MoveBaseGoal> GoalFifo;
 void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 	int opcode = msg->commandCode;
@@ -29,40 +38,67 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 	int location = msg->loc;
 	int numTimes = msg->numTimes;
 
-	// angle calculations	
-	float z = sin((angle * PI)/360.00);
-	float w = cos((angle * PI)/360.00);
+	// angle calculations
+        float z;
+        float w;
+        float sign;
+        
+        if (angle < 0) { 
+          sign = -1.00;
+          angle = -angle;
+        } else {
+          sign = 1.00;
+        }
 
 	MoveBaseGoal newGoal;
+        
+        for (int j = 0; j < numTimes; j ++) {
+  	switch (opcode) {
+	  	case RC_move:
+			if (location != L_noSet) {
+                          newGoal = createGoal(MAP_FRAME, LocationPoints[location].x, LocationPoints[location].y, 0.0, 1.0);
+			  GoalFifo.push(newGoal);
+                        } else {
+                          int numAngleTurns = (int) (angle / 20);
+                          if (numAngleTurns < 0) { numAngleTurns = -numAngleTurns; }
+                          int numMovements = (int) (distance);
 
-	switch (opcode) {
-		case RETURN:
-			break;
-
-		case MOVE:
-			newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, z, w);
-			GoalFifo.push(newGoal);
-
-			newGoal = createGoal(ROBOT_FRAME, distance, 0.0, 0.0, 1.0);
-			GoalFifo.push(newGoal);
-			break;			
-
-		case TURN:
-			newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, z, w);
-			GoalFifo.push(newGoal);
-			break;
-
-		case STOP:
-			break;
-
-		case GOTO:
-                        newGoal = createGoal(MAP_FRAME, LocationPoints[location].x, LocationPoints[location].y, 0.0, 1.0);
-			GoalFifo.push(newGoal);
+                          while(angle >= 170.00)  {
+                            newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, calcZ(90.00, sign), calcW(90.00, sign));
+   			    GoalFifo.push(newGoal);
+                            angle -= 90.00;
+                          }
+                          newGoal = createGoal(ROBOT_FRAME, 0.0, 0.0, calcZ(angle, sign), calcW(angle, sign));
+   			  GoalFifo.push(newGoal);
+                          
+                        for (int i = 0; i < numMovements; i ++) {
+			    newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 0.0, 1.0);
+			    GoalFifo.push(newGoal);
+                          }
+                        }  			
+			
+                        break;
+		case RC_goBack:
+		        break;
+ 
+                case RC_dance:
+                        newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 1.0, 0.0);
+                        GoalFifo.push(newGoal);
+                        
+                        newGoal = createGoal(ROBOT_FRAME, -1.0, 0.0, 1.0, 0.0);
+                        GoalFifo.push(newGoal);
+                
+                        newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 1.0, 0.0);
+                        GoalFifo.push(newGoal);
+ 
+                        break;
+                case RC_stop:
 			break;
 
 		default:
 			break;
 	}
+        }
 
 }
 
@@ -82,6 +118,8 @@ int main(int argc, char** argv){
   while(!ac.waitForServer(ros::Duration(5.0)) && ros::ok()){
     ROS_INFO("Waiting for the move_base action server to come up");
   }
+
+  ROS_INFO("** Command Module: Waiting for Valid Commands");
 
   move_base_msgs::MoveBaseGoal goal;
   //debug_fill_fifo();
@@ -103,14 +141,12 @@ int main(int argc, char** argv){
 
 		if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
 			ROS_INFO("** Command Module: Goal Succeeded");
+                        GoalFifo.pop();
 		} else {
-			ROS_INFO("** Command Module: Failure! Shutting Down!");
-			return 0;
-		}
+			ROS_INFO("** Command Module: Failure! Clearing the Fifo");
+		        while (! GoalFifo.empty()) { GoalFifo.pop(); }
+                }
 
-		GoalFifo.pop();
-	} else {
-		ROS_INFO("** Command Module: FIFO is EMPTY");
 	}
 
 	ros::spinOnce();

@@ -26,7 +26,7 @@
   *	Addition of prepositional phrases
   *
 **/
-#include "interpreter.h"
+#include "Interpreter.h"
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
@@ -34,7 +34,7 @@
 using namespace std;
 
 //default distance in meters
-#define DISTANCE_DEFAULT 5
+#define DISTANCE_DEFAULT 1
 //default angle of turn in degrees
 #define ANGLE_DEFAULT 90
 

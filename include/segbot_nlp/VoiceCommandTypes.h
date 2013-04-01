@@ -9,14 +9,6 @@ struct Point {
 	float y;
 };
 
-enum CommandCode {
-	RETURN,
-	MOVE,
-	TURN,
-	STOP,
-	GOTO
-};
-
 #define CURRENT_MAP 0 // this is the bwi test world map
 
 #if CURRENT_MAP == 0

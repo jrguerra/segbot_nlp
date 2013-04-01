@@ -1,20 +1,3 @@
-/**	@name LinguisticElement.h
-  *
-  *
-  *
-  *	@author		C. Daniel LaBar
-  *	Date Created:
-  *	@date		2013-03-29
-  *	Version Info:
-  *	@version	0.01.00
-  *	@date		2013-03-29
-  *
-  *	Version History:
-  *	@version	0.01.00
-  *	@date		2013-03-29
-  *	File creation
-  *
-**/
 #ifndef LINGUISTICELEMENTS_H
 #define LINGUISTICELEMENTS_H
 #include <map>
@@ -40,8 +23,7 @@ namespace NLP{
         adverb, advComp, advSuper,
 
         //phrase types
-        sentence, nounPhrase, verbPhrase, prepPhrase, advPhrase, adjPhrase, subClause,
-        phrasalVerbPart,
+        sentence, nounPhrase, verbPhrase, prepPhrase, advPhrase, subClause,
 
         numTypes, unrecognizedType
     };
@@ -181,7 +163,6 @@ namespace NLP{
 
         public:
             static LinguisticElement* getRoot();
-            static LinguisticElement* getUnrecognized();
             static LinguisticElement* getPhrase( NLP::type lingType );
 
             bool isNoun();
