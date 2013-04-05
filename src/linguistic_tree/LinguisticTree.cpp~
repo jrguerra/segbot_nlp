@@ -1,4 +1,30 @@
+/**	@name LinguisticTree.cpp
+  *
+  *	LinguisticTree is part of the NLP package
+  * as a data structure holding the information
+  * gained from stanford NLP
+  *
+  *	@author		C. Daniel LaBar
+  *	Date Created:
+  *	@date		2013-03-29
+  *	Version Info:
+  *	@version	1.00.02
+  *	@date		2013-03-29
+  *
+  *	Version History:
+  *	@version	1.00.01
+  *	@date		2013-03-29
+  *	Fixed possibility of linguisticType ending in "("
+  * rather than a space.
+  *	@version	1.00.02
+  *	@date		2013-03-30
+  *	Added some extra safety features to protect NLP::LT::
+  * interpreter from segfaulting inside getType().
+  *
+**/
 #include "LinguisticTree.h"
+#include "LinguisticElement.h"
+#include "LinguisticStructures.h"
 #include "pugixml.hpp"
 #include <iostream>
 #include <cstring>
@@ -10,9 +36,8 @@ NLP::LinguisticTree::LinguisticTree():head(NULL){
 }
 
 NLP::LinguisticTree::LinguisticTree( const char* filename ){
-    head = new NLP::LinguisticTree::PhraseNode( NULL, NLP::LinguisticElement::getRoot() );
 
-    cout << "Process of Making a Tree has Begun" << endl;
+    head = new NLP::LinguisticTree::PhraseNode( NULL, NLP::LinguisticElement::getRoot() );
 
     //make sure the typeMap is initiated
     if( !NLP::Assistant::isInit() ){
@@ -187,10 +212,6 @@ char* NLP::LinguisticTree::depthTravel( NLP::LinguisticTree::Node* element, char
         int spaceOrParen = strcspn( data, " (" );
         strncpy( linguisticType, data, spaceOrParen );
         linguisticType[ spaceOrParen ] = 0;
-        // Debugging stuff
-        cout << data << endl;
-        cout << linguisticType << endl;
-
 
         //make sure the type exists
         NLP::type lingType = NLP::Assistant::getType( linguisticType );
@@ -228,6 +249,13 @@ NLP::LinguisticTree::Node::~Node(){
 }
 
 NLP::LinguisticElement* NLP::LinguisticTree::Node::getElement(){ return element; }
+
+NLP::type NLP::LinguisticTree::Node::getType(){
+    if( element == NULL ){
+        return NLP::unrecognizedType;
+    }
+    return element->getType();
+}
 
 NLP::LinguisticTree::Node* NLP::LinguisticTree::Node::forceNext(){
     //recursive next function
@@ -428,6 +456,12 @@ NLP::LinguisticTree::Iterator NLP::LinguisticTree::word( unsigned int index ){
     return NLP::LinguisticTree::Iterator( words[index], this );
 }
 
+const char* NLP::LinguisticTree::getText( NLP::LinguisticTree::Iterator& wordIter ){
+    if( *wordIter == NULL ) return "";
+    if( !NLP::Assistant::isWord( (*wordIter)->getType() ) ) return "";
+    return ((NLP::Word*) *wordIter)->getText();
+}
+
 unsigned int NLP::LinguisticTree::Iterator::getNumChildren(){
     if( node == NULL ) return -1;
     return node->getNumChildren();
@@ -461,8 +495,16 @@ NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getParent(){
 NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getNextWord(){
     if( tree == NULL ) return getEnd();
     //if the iterator isn't on a word, return failure
-    if( !NLP::Assistant::isWord( node->getElement()->getType() ) ) return tree->end();
+    if( !NLP::Assistant::isWord( node->getType() ) ) return tree->end();
     //get the index of the next word
     unsigned int index = ( (NLP::Word*) (node->getElement()) )->getID() + 1;
+    return tree->word( index );
+}
+
+NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getPrevWord(){
+    if( tree == NULL ) return getEnd();
+    //if the iterator isn't on a wor return failure
+    if( !NLP::Assistant::isWord( node->getType() ) ) return tree->end();
+    unsigned int index = ( (NLP::Word*) (node->getElement()) )->getID() - 1 ;
     return tree->word( index );
 }
