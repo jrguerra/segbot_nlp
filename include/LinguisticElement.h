@@ -41,7 +41,7 @@ namespace NLP{
 
         //phrase types
         sentence, nounPhrase, verbPhrase, prepPhrase, advPhrase, adjPhrase, subClause,
-        phrasalVerbPart,
+        sinv, phrasalVerbPart,
 
         numTypes, unrecognizedType
     };

@@ -8,8 +8,8 @@
   *	Date Created:
   *	@date		2013-03-29
   *	Version Info:
-  *	@version	1.00.02
-  *	@date		2013-03-29
+  *	@version	1.00.03
+  *	@date		2013-04-02
   *
   *	Version History:
   *	@version	1.00.01
@@ -20,6 +20,13 @@
   *	@date		2013-03-30
   *	Added some extra safety features to protect NLP::LT::
   * interpreter from segfaulting inside getType().
+  *	@version	1.00.03
+  *	@date		2013-04-02
+  *	Added possibility of there being no space between
+  * LinguisticType and the word of that type. Also made
+  * the string that holds linguisticType be of dynamic size
+  * so no more BUFFER OVERFLOW if something else goes wrong.
+  * Hopefully, the last fix
   *
 **/
 #include "LinguisticTree.h"
@@ -29,6 +36,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
+#include <ctype.h>
 
 using namespace std;
 
@@ -208,16 +216,24 @@ char* NLP::LinguisticTree::depthTravel( NLP::LinguisticTree::Node* element, char
         //otherwise find it's linguistic classification
         data += paren + 1;
 
-        char linguisticType[7];
         int spaceOrParen = strcspn( data, " (" );
+        char* linguisticType = new char[ spaceOrParen + 1 ];
         strncpy( linguisticType, data, spaceOrParen );
         linguisticType[ spaceOrParen ] = 0;
+        //handles for the possibility of a missing space
+        for( int j = 0 ; j < spaceOrParen; ++j ){
+            if( islower( linguisticType[j] ) ){
+                linguisticType[j] = 0;
+                break;
+            }
+        }
 
         //make sure the type exists
         NLP::type lingType = NLP::Assistant::getType( linguisticType );
         if( lingType == NLP::unrecognizedType ){
             cout<<"Error: unrecogonized type: "<<linguisticType<<endl;
         }
+        delete linguisticType;
 
         NLP::LinguisticTree::Node* child;
         //if it is a word type it's the next word in the list

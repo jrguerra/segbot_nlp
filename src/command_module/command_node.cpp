@@ -6,6 +6,7 @@
 #include "Interpreter.h"
 #include <queue> 
 #include <cmath>
+#include <vector>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 typedef ros::NodeHandle NodeHandle;
@@ -21,6 +22,7 @@ enum FrameType {MAP_FRAME, ROBOT_FRAME};
 
 void debug_fill_fifo(void); // fills the fifo as a test with three or four commands
 MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w);
+MoveBaseGoal invertGoal(MoveBaseGoal goal);
 
 float calcZ(float angle, float sign) {
     return sin((sign * angle * PI)/360.00);
@@ -30,6 +32,7 @@ float calcW(float angle, float sign) {
     return cos((sign * angle * PI)/360.00);
 }
 
+std::vector<move_base_msgs::MoveBaseGoal>SentCommands;
 std::queue<move_base_msgs::MoveBaseGoal> GoalFifo;
 void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 	int opcode = msg->commandCode;
@@ -79,8 +82,32 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
 			
                         break;
 		case RC_goBack:
-		        break;
+                        if (SentCommands.empty()) {
+                           // this means we can't do anything
+                           break;
+                        }
+		        
+                        if (location == L_noSet) {
+                          newGoal = SentCommands.back();
+                          SentCommands.pop_back();
+                          GoalFifo.push(invertGoal(newGoal));
+                         
+                          newGoal = SentCommands.back();
+                          SentCommands.pop_back();
+                          GoalFifo.push(invertGoal(newGoal));
+
+                        } else {
+                            for (std::vector<move_base_msgs::MoveBaseGoal>::iterator it = SentCommands.begin(); it != SentCommands.end(); ++it) {
+  	                      if ((*it).target_pose.pose.position.x = LocationPoints[location].x && (*it).target_pose.pose.position.y == LocationPoints[location].y) {
+                                newGoal = *(it);
+                                GoalFifo.push(newGoal);
+                                break;
+                              }
+                            } 
+                        } 
  
+                        break;
+
                 case RC_dance:
                         newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 1.0, 0.0);
                         GoalFifo.push(newGoal);
@@ -92,8 +119,6 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
                         GoalFifo.push(newGoal);
  
                         break;
-                case RC_stop:
-			break;
 
 		default:
 			break;
@@ -141,6 +166,7 @@ int main(int argc, char** argv){
 
 		if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
 			ROS_INFO("** Command Module: Goal Succeeded");
+                        SentCommands.push_back(goal);
                         GoalFifo.pop();
 		} else {
 			ROS_INFO("** Command Module: Failure! Clearing the Fifo");
@@ -198,6 +224,13 @@ MoveBaseGoal createGoal(FrameType frame, float x, float y, float z, float w) {
 	goal.target_pose.pose.orientation.y = 0.0;
 	goal.target_pose.pose.orientation.z = z;
 	goal.target_pose.pose.orientation.w = w;
+
+	return goal;
+}
+
+MoveBaseGoal invertGoal(MoveBaseGoal goal) {
+	goal.target_pose.pose.position.x *= -1.00;
+        goal.target_pose.pose.position.y *= -1.00;
 
 	return goal;
 }

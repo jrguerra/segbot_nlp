@@ -1,3 +1,24 @@
+/**	@name LinguisticTree.h
+  *
+  *	LinguisticTree Header
+  *
+  *	@author		C. Daniel LaBar
+  *	Date Created:
+  *	@date		2013-03-29
+  *	Version Info:
+  *	@version	1.00.01
+  *	@date		2013-03-29
+  *
+  *	Version History:
+  *	@version	1.00.00
+  *	@date		2013-03-29
+  *	File creation
+  * Currently Beta
+  *	@version	1.00.01
+  *	@date		2013-03-30
+  *	added NLP::LT::Node::getType()
+  *
+**/
 #ifndef LINGUISTICTREE_H
 #define LINGUISTICTREE_H
 #include <vector>
@@ -32,7 +53,8 @@ namespace NLP{
                     virtual LinguisticTree::Node* getNext()=0;
                     //Get the previous elemenent
                     virtual LinguisticTree::Node* getPrev();
-                    virtual LinguisticElement* getElement();
+                    LinguisticElement* getElement();
+                    NLP::type getType();
                     virtual LinguisticTree::Node* getSelectChild( int index )=0;
                     virtual int addChild( LinguisticTree::Node* child )=0;
                     virtual unsigned int getNumChildren()=0;
@@ -154,6 +176,8 @@ namespace NLP{
 
             LinguisticTree::Iterator begin();
             LinguisticTree::Iterator end();
+
+            static const char* getText( NLP::LinguisticTree::Iterator& wordIter );
 
             LinguisticTree::Iterator word( unsigned int index );
 

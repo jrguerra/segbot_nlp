@@ -6,8 +6,8 @@
   *	Date Created:
   *	@date		2013-03-29
   *	Version Info:
-  *	@version	0.01.02
-  *	@date		2013-03-30
+  *	@version	0.02.01
+  *	@date		2013-04-03
   *
   *	Version History:
   *	@version	0.01.01
@@ -16,7 +16,11 @@
   *	@version	0.01.02
   *	@date		2013-03-30
   *	Added debugging tools for CommandVector
-  *
+  *	@version	0.02.01
+  *	@date		2013-04-03
+  *	Added internal classes for conversion factors
+  * inside interpretter. Also added conversion map
+  * and Cardinal Number function.
 **/
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
@@ -29,13 +33,13 @@
 #include <iostream>
 
 enum fullCommand{ FC_move, FC_turn, FC_goLocation, FC_goBack, FC_dance, FC_numFullCommands, FC_error };
-enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_stop, RC_error };
+enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_error };
 enum direction{ D_noSet, D_turnDefault,D_moveDefault, D_left, D_right, D_forward, D_backward, D_numDirection, D_noChange };
-enum location{ L_noSet, /*DEBUG: for testing purposes only*/L_chair, L_default, L_numLocation, L_noChange };
+enum location{ L_noSet, L_wall, L_bookcase, L_hallway, L_default, L_numLocation, L_noChange };
 
 class CommandVector{
     public:
-        CommandVector( fullCommand baseType );
+        CommandVector( fullCommand baseType, const char* commandWord );
 
         //type used for interpretting data
         fullCommand baseType;
@@ -45,6 +49,8 @@ class CommandVector{
         direction dir;
         location loc;
         int repetitions;
+
+        const char* commandWord;
 
         friend std::ostream& operator<<( std::ostream& out, CommandVector& command );
 };
@@ -86,6 +92,25 @@ class Interpreter{
             public:
                 bool augment( CommandVector& command, NLP::LinguisticTree::Iterator& wordIter );
         };
+        //private Conversion class used for cardinal Direct Object Reductions:
+        class Conversion{
+            public:
+                //enumeration specifying the type of conversion
+                enum type{ distance, angle, repetition };
+                //ctor
+                Conversion( Conversion::type cType, float factor );
+                Conversion(){}
+
+            private:
+                type cType;
+                float factor;
+
+            public:
+                //converts the value and sets the appropriate parameter for command
+                //returns 0 upon failure
+                bool convert( float value, CommandVector& command );
+        };
+
         //Our "Shrinking" maps
 
         //reduces command words to their full command enumeration
@@ -96,6 +121,10 @@ class Interpreter{
         static std::map<std::string, CommandAugment> adverbAugmentMap;
         //checks for validity and behavior of location nouns
         static std::map<std::string, CommandAugment> locAugmentMap;
+        //checks for validity and behaviour of relative location nouns (left, right, port)
+        static std::map<std::string, CommandAugment> relLocAugmentMap;
+        //checks for validity and behaviour of conversion factors:
+        static std::map<std::string, Conversion> conversionFactorMap;
         //error enable bool
         static std::vector<bool> statusState;
         //simple direct map from full commands to their reduced form
@@ -120,17 +149,24 @@ class Interpreter{
         //breakdown helper function
         static void interpretPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
         //breakdown for adverb phrases
-        static void interpretAdverb( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
         //breakdown for interpretting prepositional phrase
-        static void interpretPreposition( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
         //breakdown for interpretting a location noun phrase
-        static void interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, bool fromPreposition = 1 );
+        //breakdown for interpretting direct object
+        static void interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        //breakdown for cardinal matching pairs
+        static bool interpretCardinal( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, unsigned int startingIndex = 0 );
+
+        //breakdown of individual adverb:
+        static bool interpretAdverb( NLP::LinguisticTree::Iterator& word, CommandVector& command, CommandAugment*& augment );
 
         //returns the associated full command from the command map
         static fullCommand getCooresponding( const char* word );
 
         //recursive Helper Function;
-        static void depthCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potentialCommands );
+        static bool depthCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potentialCommands );
 
         static bool isIgnored( NLP::LinguisticTree::Iterator& wordIter );
 

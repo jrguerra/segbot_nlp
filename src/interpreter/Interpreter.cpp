@@ -6,8 +6,8 @@
   *	Date Created:
   *	@date		2013-03-29
   *	Version Info:
-  *	@version	0.01.03
-  *	@date		2013-03-30
+  *	@version	1.00.00
+  *	@date		2013-04-03
   *
   *	Version History:
   *	@version	0.01.01
@@ -24,13 +24,22 @@
   *	@version	0.02.01
   *	@date		2013-03-30
   *	Addition of prepositional phrases
-  *
+  *	@version	0.02.02
+  *	@date		2013-04-03
+  *	Added Subjective Noun detection and
+  * some more error codes. Also added
+  * "counterclockwise" to Augment map
+  *	@version	1.00.00
+  *	@date		2013-04-03
+  *	Beta, Added most of Direct object support
+  * and added cardinal support
 **/
 #include "Interpreter.h"
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>
+#include <sstream>
 using namespace std;
 
 //default distance in meters
@@ -43,6 +52,8 @@ std::map<std::string, fullCommand> Interpreter::commandMap;
 static std::map<std::string, fullCommand> gerundReductionMap;
 std::map<std::string, Interpreter::CommandAugment> Interpreter::adverbAugmentMap;
 std::map<std::string, Interpreter::CommandAugment> Interpreter::locAugmentMap;
+std::map<std::string, Interpreter::CommandAugment> Interpreter::relLocAugmentMap;
+std::map<std::string, Interpreter::Conversion> Interpreter::conversionFactorMap;
 std::vector<bool> Interpreter::statusState;
 reducedCommand Interpreter::commandReduction[FC_numFullCommands];
 std::set<std::string> Interpreter::ignoredWords;
@@ -134,15 +145,16 @@ class AroundSpecial:public SpecialCase{
 AroundSpecial AroundSpecial::aroundCase;
 
 //function controls
-CommandVector::CommandVector( fullCommand baseType ):baseType(baseType),trueType(Interpreter::reduce(baseType)),
-    distance(FLOAT_NOSET),angle(FLOAT_NOSET),dir(D_noSet),loc(L_noSet),repetitions(REP_NOSET){}
+CommandVector::CommandVector( fullCommand baseType, const char* commandWord ):baseType(baseType),trueType(Interpreter::reduce(baseType)),
+    distance(FLOAT_NOSET),angle(FLOAT_NOSET),dir(D_noSet),loc(L_noSet),repetitions(REP_NOSET),commandWord(commandWord){}
 
 std::ostream& operator<<( std::ostream& out, CommandVector& command ){
-            out<<getString(command.baseType)<<", "<<getString(command.trueType)<<std::endl;
-            out<<"Distance: "<<command.distance<<", Angle: "<<command.angle<<std::endl;
-            out<<getString(command.dir)<<", "<<getString(command.loc)<<std::endl;
-            out<<command.repetitions<<std::endl<<std::endl;
-            return out;
+    out<<command.commandWord<<std::endl;
+    out<<getString(command.baseType)<<", "<<getString(command.trueType)<<std::endl;
+    out<<"Distance: "<<command.distance<<", Angle: "<<command.angle<<std::endl;
+    out<<getString(command.dir)<<", "<<getString(command.loc)<<std::endl;
+    out<<command.repetitions<<std::endl<<std::endl;
+    return out;
 }
 
 void Interpreter::init(){
@@ -155,6 +167,7 @@ void Interpreter::init(){
     commandMap["travel"] = FC_move;
     commandMap["move"] = FC_move;
     commandMap["advance"] = FC_move;
+    commandMap["head"] = FC_move;
     commandMap["dance"] = FC_dance;
     commandMap["celebrate"] = FC_dance;
     commandMap["boogie"] = FC_dance;
@@ -179,17 +192,32 @@ void Interpreter::init(){
     adverbAugmentMap["forward"] = CommandAugment( D_forward, L_noChange );
     adverbAugmentMap["backwards"] = CommandAugment( D_backward, L_noChange );
     adverbAugmentMap["clockwise"] = CommandAugment( ClockwiseSpecial::get() );
+    adverbAugmentMap["counterclockwise"] = CommandAugment( D_left, L_noChange );
     adverbAugmentMap["twice"] = CommandAugment( D_noChange, L_noChange, 2 );
     adverbAugmentMap["thrice"] = CommandAugment( D_noChange, L_noChange, 3 );
     adverbAugmentMap["around"] = CommandAugment( AroundSpecial::get() );
+    adverbAugmentMap["ahead"] = CommandAugment( D_forward, L_noChange );
     //locationAugment initialization
-    locAugmentMap["port"] = CommandAugment( D_left, L_noChange );
-    locAugmentMap["left"] = CommandAugment( D_left, L_noChange );
-    locAugmentMap["portside"] = CommandAugment( D_left, L_noChange );
-    locAugmentMap["right"] = CommandAugment( D_right, L_noChange );
-    locAugmentMap["starboard"] = CommandAugment( D_right, L_noChange );
-    //DEBUG: REMOVE WHEN DONE TESTING
-    locAugmentMap["chair"] = CommandAugment( D_noChange, L_chair );
+    locAugmentMap["wall"] = CommandAugment( D_noChange, L_wall );
+    locAugmentMap["bookcase"] = CommandAugment( D_noChange, L_bookcase );
+    locAugmentMap["hallway"] = CommandAugment( D_noChange, L_hallway );
+    //relative location augment initialization
+    relLocAugmentMap["port"] = CommandAugment( D_left, L_noChange );
+    relLocAugmentMap["left"] = CommandAugment( D_left, L_noChange );
+    relLocAugmentMap["portside"] = CommandAugment( D_left, L_noChange );
+    relLocAugmentMap["right"] = CommandAugment( D_right, L_noChange );
+    relLocAugmentMap["starboard"] = CommandAugment( D_right, L_noChange );
+    //Conversion Factor initialization
+    conversionFactorMap["meters"] = Conversion( Conversion::distance, 1 );
+    conversionFactorMap["meter"] = Conversion( Conversion::distance, 1 );
+    conversionFactorMap["degree"] = Conversion( Conversion::angle, 1 );
+    conversionFactorMap["degrees"] = Conversion( Conversion::angle, 1 );
+    conversionFactorMap["time"] = Conversion( Conversion::repetition, 1 );
+    conversionFactorMap["times"] = Conversion( Conversion::repetition, 1 );
+    conversionFactorMap["feet"] = Conversion( Conversion::distance, .3048 );
+    conversionFactorMap["foot"] = Conversion( Conversion::distance, .3048 );
+    conversionFactorMap["radian"] = Conversion( Conversion::angle, 180./3.1416 );
+    conversionFactorMap["radians"] = Conversion( Conversion::angle, 180./3.1416 );
 
     //ignored terms
     ignoredWords.insert("now");
@@ -227,6 +255,13 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
     commandWordList.pop_front();
 
     std::list<CommandVector> commandList;
+    if( commandWordList.empty() ){
+        if( statusState[error] ){
+            cerr<<"No command found"<<endl;
+        }
+        return commandList;
+    }
+
     //transform commandWords to appropriate command defaults and removes invalid command words
     std::list<NLP::LinguisticTree::Iterator>::iterator currentWord = commandWordList.begin();
     while( currentWord != commandWordList.end() ){
@@ -245,7 +280,7 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
             }
             continue;
         }
-        commandList.push_back( CommandVector(commandType) );
+        commandList.push_back( CommandVector(commandType, word->getText() ) );
         currentWord++;
     }
 
@@ -376,7 +411,7 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
             commandList.erase( currentCommand );
         }
     }
-    //TODO: set defaults for commands that are not invalidated
+    //set defaults for commands that are not invalidated
     for( command = commandList.begin(); command != commandList.end(); command++ ){
         switch( command->baseType ){
             case FC_move:
@@ -389,8 +424,9 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
                     //if it is turn type default the angle
                     if( command->dir == D_left || command->dir == D_right ){
                         command->angle = ANGLE_DEFAULT;
-                    }else{
-                        //otherwise default distance
+                    }
+                    //also default the distance
+                    if( command->distance == FLOAT_NOSET ){
                         command->distance = DISTANCE_DEFAULT;
                     }
                 }
@@ -430,7 +466,14 @@ std::list<NLP::LinguisticTree::Iterator> Interpreter::getCommands( NLP::Linguist
     if( *root == NULL ) return potentialCommandWordList;
     if( (*root)->getType() != NLP::root ) return potentialCommandWordList;
     //recursive call
-    depthCommandFind( root, potentialCommandWordList );
+    for( unsigned int i = 0; i < root.getNumChildren(); ++i ){
+        NLP::LinguisticTree::Iterator child = root.getChild(i);
+        if( getType(child) == NLP::sentence || getType(child) == NLP::verbPhrase || getType(child) == NLP::sinv ){
+            if( !depthCommandFind( child, potentialCommandWordList ) ){
+                return potentialCommandWordList;
+            }
+        }
+    }
     return potentialCommandWordList;
 }
 
@@ -443,7 +486,7 @@ fullCommand Interpreter::getCooresponding( const char* word ){
     return FC_error;
 }
 
-void Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potentialCommands ){
+bool Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potentialCommands ){
     for( unsigned int i = 0; i < current.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator child = current.getChild(i);
         switch( getType(child) ){
@@ -451,15 +494,26 @@ void Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std:
             case NLP::verbPresent:
                 potentialCommands.push_back( child );
                 break;
-            case NLP::sentence:
             case NLP::verbPhrase:
+            //DEBUG: currently testing this blocker out
+            //case NLP::sentence:
                 depthCommandFind( child, potentialCommands );
                 break;
+            //DEBUG: curently testing this new blocker out
+            case NLP::nounPhrase:
+                //if we've found a subjective noun
+                if( getType(current) == NLP::sentence ){
+                    //we know there are no commands
+                    if( statusState[error] ){
+                        cerr<<"Subjective noun found, sentence is not a command"<<endl;
+                    }
+                    return 0;
+                }
             default:
                 break;
         }
     }
-    return;
+    return 1;
 }
 
 void Interpreter::interpretPhraseElements( NLP::LinguisticTree::Iterator& word, CommandVector& command ){
@@ -481,17 +535,20 @@ void Interpreter::interpretPhrase( NLP::LinguisticTree::Iterator& phrase, Comman
         //just in case of misclassification
         case NLP::adjPhrase:
         case NLP::verbPhrase:
-            interpretAdverb( phrase, command );
+            interpretAdverbPhrase( phrase, command );
             break;
         case NLP::prepPhrase:
-            interpretPreposition( phrase, command );
+            interpretPrepositionPhrase( phrase, command );
+            break;
+        case NLP::nounPhrase:
+            interpretDirectObject( phrase, command );
             break;
         default:
             break;
     }
 }
 
-void Interpreter::interpretAdverb( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
     for( unsigned int i = 0; i < phrase.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator child = phrase.getChild(i);
         CommandAugment* currentAugment = NULL;
@@ -502,25 +559,16 @@ void Interpreter::interpretAdverb( NLP::LinguisticTree::Iterator& phrase, Comman
             case NLP::adjective:
             case NLP::verbPastPart:
             case NLP::preposition:
-                try{
-                    //if it is an augmentation adverb grab it's augment
-                    currentAugment = &adverbAugmentMap.at( NLP::LinguisticTree::getText(child) );
-                }catch( std::out_of_range oor ){
-                    //otherwise check to see if we can ignore it
-                    if( !isIgnored( child ) ){
-                        //if we can't it's an erroneous command
-                        if( statusState[error] ){
-                            cerr<<"Invalidating adverb \""<<NLP::LinguisticTree::getText(child)<<"\". Invalidating Command."<<endl;
-                        }
-                        invalidate( command );
-                        return;
-                    }
+                if( !interpretAdverb( child, command, currentAugment ) ){
+                    return;
                 }
                 break;
             //if nested needs to be evaluated:
             case NLP::advPhrase:
             case NLP::adjPhrase:
-                interpretAdverb( child, command );
+                interpretAdverbPhrase( child, command );
+            case NLP::nounPhrase:
+                interpretDirectObject( child, command );
             default:
                 //TODO: handle unrecognized types
                 break;
@@ -540,7 +588,7 @@ void Interpreter::interpretAdverb( NLP::LinguisticTree::Iterator& phrase, Comman
     }
 }
 
-void Interpreter::interpretPreposition( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
     //first child is always the preposition:
     //TODO: Try to find a counter-example
     NLP::LinguisticTree::Iterator child = phrase.getFirstChild();
@@ -567,7 +615,7 @@ void Interpreter::interpretPreposition( NLP::LinguisticTree::Iterator& phrase, C
     }
 }
 
-void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, bool fromPreposition ){
     if( getType(phrase) != NLP::nounPhrase ){
         invalidate( command );
         if( statusState[error] ){
@@ -582,14 +630,21 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
             case NLP::determiner:
                 break;
             case NLP::noun:
+            case NLP::pluralNoun:
             //possible misclassifications
             case NLP::adjective:
                 try{
-                    //if it is an augmentation adverb grab it's augment
+                    //if it is an location grab it's augment
                     currentAugment = &locAugmentMap.at( NLP::LinguisticTree::getText(child) );
                 }catch( std::out_of_range oor ){
+                    //otherwise if it is a relative location grab it's augment if it is consider
+                    if( fromPreposition ){
+                        try{
+                            currentAugment = &relLocAugmentMap.at( NLP::LinguisticTree::getText(child) );
+                        }catch( std::out_of_range ){}
+                    }
                     //otherwise check to see if we can ignore it
-                    if( !isIgnored( child ) ){
+                    if( !isIgnored( child ) && currentAugment == NULL ){
                         //if we can't it's an erroneous command
                         if( statusState[error] ){
                             cerr<<"Invalidating location noun \""<<NLP::LinguisticTree::getText(child)<<"\". Invalidating Command."<<endl;
@@ -603,13 +658,25 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
             case NLP::nounPhrase:
             //or phrase misclassification
             case NLP::adjPhrase:
-                interpretAdverb( child, command );
+                interpretAdverbPhrase( child, command );
+                break;
+            case NLP::cardinalNum:
+                //accidental inclusion of cardinal
+                if( !interpretCardinal( phrase, command, i ) ){
+                    invalidate( command );
+                    return;
+                }else{
+                    //since phrase was finished by interpretCardinal
+                    return;
+                }
                 break;
             default:
                 if( !isIgnored( child ) ){
                     if( statusState[error] ){
                         cerr<<"Warning: Unsupported type "<<getType(child)<<" in location interpretation."<<endl;
                     }
+                    invalidate( command );
+                    return;
                 }
                 break;
         }
@@ -626,6 +693,143 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
         }
     }
 
+}
+
+void Interpreter::interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+    //behaviour changes based on full type
+    if( command.baseType == FC_goLocation ){
+        interpretLocation( phrase, command, 0  );
+    }else{
+        //if it's not a cardinal for non goto
+        if( !interpretCardinal( phrase, command ) ){
+            //for now invalidate, but there is still some work to be done
+            //for ex. "go home", "return home", "head home", but "move home" doesn't work
+            invalidate( command );
+        }
+    }
+}
+
+bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, unsigned int startingIndex ){
+    bool isSet = 0;
+    float value = FLOAT_NOSET;
+    //helper for pulling floating point from text
+    istringstream valueStream;
+
+    for( unsigned int i = startingIndex; i < phrase.getNumChildren(); i++ ){
+        NLP::LinguisticTree::Iterator child = phrase.getChild( i );
+        CommandAugment* currentAugment = NULL;
+        Conversion* currentConversion = NULL;
+        switch( getType( child ) ){
+            //just incase an adverb or adjective "fell" into the noun phrase
+            case NLP::adverb:
+            case NLP::adjective:
+                if( !interpretAdverb( child, command, currentAugment ) ){
+                   return 0;
+                }
+                break;
+            //finding the cardinal number
+            case NLP::cardinalNum:
+                //if the value was already set
+                if( value != FLOAT_NOSET ){
+                    return 0;
+                }
+                //load the float
+                valueStream.str( NLP::LinguisticTree::getText( child ) );
+                valueStream>>value;
+                //if the float couldn't be loaded
+                if( valueStream.bad() || value < 0 ){
+                    if(statusState[error]){
+                        cerr<<"Couldn't recognize number"<<endl;
+                    }
+                    return 0;
+                }
+                break;
+            //handlers for noun phrases
+            case NLP::noun:
+            case NLP::pluralNoun:
+                //check to see for conversion
+                try{
+                    currentConversion = &conversionFactorMap.at( NLP::LinguisticTree::getText(child) );
+                }catch( std::out_of_range oor ){
+                    //if it is not a conversion check to see if it is a misclassified adverb
+                    //ex. "rotate right"
+                    if( !interpretAdverb( child, command, currentAugment ) ){
+                        return 0;
+                    }
+                }
+                //if we found a conversion
+                if( currentConversion != NULL ){
+                    //but we have no value to convert
+                    if( value == FLOAT_NOSET ){
+                        if( statusState[error] ){
+                            cerr<<"Tried to Convert without Value"<<endl;
+                        }
+                        return 0;
+                    }
+                    //otherwise convert
+                    if( !currentConversion->convert( value, command ) ){
+                        if( statusState[error] ){
+                            cerr<<"Invalid Conversion attempt due to redundancy"<<endl;
+                        }
+                        return 0;
+                    }
+                    isSet = 1;
+                }
+                break;
+            //nested cardinal phrase, rare but can happen
+            //example: "move 2 meters 3 times"
+            case NLP::nounPhrase:
+                //if interpretation failed.
+                if( !interpretCardinal( child, command ) ){
+                    return 0;
+                }
+                break;
+
+            default:
+                if( !isIgnored( child ) ){
+                    if( statusState[error] ){
+                        cerr<<"Warning: Unsupported type "<<getType(child)<<" in cardinal interpretation."<<endl;
+                    }
+                    return 0;
+                }
+        }
+        if( currentAugment != NULL ){
+            //check to make sure it executes:
+            if( !currentAugment->augment( command, child ) ){
+                //if it fails the command is erroneous:
+                if( statusState[error] ){
+                    cerr<<"Augmentation failed. Parameter redundancy detected."<<endl;
+                }
+                return 0;
+            }
+        }
+    }
+    //if a conversion was not found but a number was i.e. "move 3"
+    if( value != FLOAT_NOSET && isSet == 0 ){
+        if( statusState[error] ){
+            cerr<<"Number found, but was not assigned."<<endl;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+bool Interpreter::interpretAdverb( NLP::LinguisticTree::Iterator& word, CommandVector& command, CommandAugment*& augment ){
+    try{
+        //if it is an augmentation adverb grab it's augment
+        augment = &adverbAugmentMap.at( NLP::LinguisticTree::getText(word) );
+    }catch( std::out_of_range oor ){
+        //otherwise check to see if we can ignore it
+        if( !isIgnored( word ) ){
+            //if we can't it's an erroneous command
+            if( statusState[error] ){
+                cerr<<"Invalidating adverb \""<<NLP::LinguisticTree::getText(word)<<"\". Invalidating Command."<<endl;
+            }
+            invalidate( command );
+            return 0;
+        }
+    }
+    return 1;
 }
 
 bool Interpreter::isIgnored( NLP::LinguisticTree::Iterator& wordIter ){
@@ -672,6 +876,43 @@ bool Interpreter::CommandAugment::augment( CommandVector& command, NLP::Linguist
         command.repetitions = repetitions;
     }
     return true;
+}
+
+Interpreter::Conversion::Conversion( Interpreter::Conversion::type cType, float factor ):cType(cType), factor(factor){}
+
+//TODO: SET UP FOR THINGS SUCH AS "2 feet 5 inches"
+//probably need to store last conversion word inside command for check
+bool Interpreter::Conversion::convert( float value, CommandVector& command ){
+    //based on the type of conversion it is
+    //check to see if the value is already set
+    //if so return failure.
+    //otherwise set it.
+    switch (cType){
+        case distance:
+            if( command.distance != FLOAT_NOSET ){
+                return 0;
+            }
+            command.distance = value*factor;
+            break;
+        case angle:
+            if( command.angle != FLOAT_NOSET ){
+                return 0;
+            }
+            command.angle = value*factor;
+            break;
+        case repetition:
+            if( command.repetitions != REP_NOSET ){
+                return 0;
+            }
+            command.repetitions = (int) value*factor;
+            //check to make sure repetitions was a whole number
+            //no "move 1.5 times
+            if( command.repetitions != value*factor ){
+                return 0;
+            }
+            break;
+    }
+    return 1;
 }
 
 NLP::type Interpreter::getType( NLP::LinguisticTree::Iterator current ){
@@ -744,8 +985,12 @@ const char* getString( location l ){
         case L_noSet:
             return "Not Set";
         //DEBUG: for testing only
-        case L_chair:
-            return "Chair";
+        case L_wall:
+            return "Wall";
+        case L_bookcase:
+            return "Bookcase";
+        case L_hallway:
+            return "Hallway";
         case L_default:
             return "Default";
         default:

@@ -18,6 +18,14 @@
   * @author Joe Martinez
   *	Dependency Map has been initialized
   * in NLP::Assistant::init
+  *	@version	1.00.01
+  *	@date		2013-04-02
+  *	Fixed BUFFER OVERFLOW created by Word
+  * constructor
+  *	@version	1.00.02
+  *	@date		2013-04-03
+  *	Added support for NP-TMP and QP phrase
+  * types in order to interpret cardinals
   *
 **/
 #include "LinguisticElement.h"
@@ -72,11 +80,14 @@ void NLP::Assistant::init(){
     typeMap["RBS"] = NLP::advSuper;
     typeMap["S"] = NLP::sentence;
     typeMap["NP"] = NLP::nounPhrase;
+    typeMap["NP-TMP"] = NLP::nounPhrase;
+    typeMap["QP"] = NLP::nounPhrase;
     typeMap["VP"] = NLP::verbPhrase;
     typeMap["PP"] = NLP::prepPhrase;
     typeMap["ADVP"] = NLP::advPhrase;
     typeMap["ADJP"] = NLP::adjPhrase;
     typeMap["SBAR"] = NLP::subClause;
+    typeMap["SINV"] = NLP::sinv;
     typeMap["PRT"] = NLP::phrasalVerbPart;
     //TODO depMap;
     depMap["abbrev"] = NLP::Dependency::abbrev;
@@ -200,7 +211,7 @@ NLP::type NLP::LinguisticElement::getType(){
 }
 
 NLP::Word::Word( NLP::type lingType, const char* word, unsigned int id ):NLP::LinguisticElement(lingType),id(id){
-    this->word = new char[strlen( word )];
+    this->word = new char[ strlen( word ) + 1 ];
     strcpy( this->word, word );
 }
 

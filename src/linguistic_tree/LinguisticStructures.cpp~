@@ -1,3 +1,21 @@
+/**	@name LinguisticStructures.cpp
+  *
+  *	Contains range and Dependency functions
+  * for the LT class
+  *
+  *	@author		C. Daniel LaBar
+  *	Date Created:
+  *	@date		2013-03-29
+  *	Version Info:
+  *	@version	0.01.01
+  *	@date		2013-03-29
+  *
+  *	Version History:
+  *	@version	0.01.01
+  *	@date		2013-03-29
+  *	File creation
+  *
+**/
 #include "LinguisticStructures.h"
 
 NLP::Range::Range():startIndex(LINGUISTIC_RANGE_INVALID){}

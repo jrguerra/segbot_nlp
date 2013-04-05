@@ -3,7 +3,7 @@ use warnings;
 use strict;
 
 my $name = $ARGV[0];
-
+print "Hello, world!\n";
 #Global Variables
 my %tokens = ();
 my %coms = ();
