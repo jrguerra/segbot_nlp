@@ -37,7 +37,7 @@ def speech():
 
 	rospy.init_node('gspeech')
 	pubs = rospy.Publisher('filename', String)
-	pubc = rospy.Publisher('command_message', VoiceCommand);
+	pubc = rospy.Publisher('command_message', _VoiceCommand.VoiceCommand);
 	args2 = shlex.split(cmd2)
 
 	while not rospy.is_shutdown():
@@ -55,8 +55,8 @@ def speech():
 			print data
 			print "*****************************\n"
 			if data == "stop" or data == "halt":
-				x = VoiceCommand()
-				VoiceCommand.commandCode = 4
+				x = _VoiceCommand.VoiceCommand()
+				x.commandCode = 4
 				pubc.publish(x)
 			else:
 				filename= subprocess.Popen(["perl", "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/scrape.pl", data], stdout=subprocess.PIPE).communicate()
