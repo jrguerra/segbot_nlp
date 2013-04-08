@@ -44,7 +44,7 @@ if ($Page->is_success) {
 	$parseseg =~ s/\n//sg;
 	$output =~ s/<parse>.*<\/parse>/$parseseg/sg;
 	$output = $output."\n";
-	$name = "/nishome/nlpros/ros/rosbuild_ws/segbot_nlp/src/debug/test.xml";
+	$name = "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/test.xml";
 	open my $FILE, ">", $name;
 	print $FILE $output;
 	close $FILE;
