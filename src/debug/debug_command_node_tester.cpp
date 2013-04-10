@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     msg.commandCode = 0; // this is RC_move
     msg.distance = meters;
     msg.angle = degrees;
-
+    msg.numTimes = 1;
     chatter_pub.publish(msg);
 
   }
