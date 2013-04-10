@@ -33,7 +33,7 @@
 #include <iostream>
 
 enum fullCommand{ FC_move, FC_turn, FC_goLocation, FC_goBack, FC_dance, FC_numFullCommands, FC_error };
-enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_error };
+enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_error, RC_stop };
 enum direction{ D_noSet, D_turnDefault,D_moveDefault, D_left, D_right, D_forward, D_backward, D_numDirection, D_noChange };
 enum location{ L_noSet, L_wall, L_bookcase, L_hallway, L_default, L_numLocation, L_noChange };
 

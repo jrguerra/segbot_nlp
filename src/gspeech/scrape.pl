@@ -71,7 +71,7 @@ if ($Page->is_success) {
 	$parseseg =~ s/\n//sg;
 	$output =~ s/<parse>.*<\/parse>/$parseseg/sg;
 	$output = $output."\n";
-	$name = "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/".md5_hex($input).".xml";
+	$name = "/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/".md5_hex($input).".xml";
 	open $FILE, ">", $name;
 	print $FILE "$output\n";
 	close $FILE;

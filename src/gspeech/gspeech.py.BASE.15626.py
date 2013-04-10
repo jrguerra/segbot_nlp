@@ -20,12 +20,12 @@
 # 30-06-2012 , 3.00pm									#
 # achu@achuwilson.in									#
 #########################################################################################
-import roslib; roslib.load_manifest('segbot_nlp') 
+import roslib; roslib.load_manifest('gspeech') 
 import rospy
 from std_msgs.msg import String
 from std_msgs.msg import Int8
 import sys
-sys.path.append("/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/segbot_nlp/msg")
+sys.path.append("/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/segbot_nlp/msg")
 import _VoiceCommand
 import shlex,subprocess,os
 cmd1='sox -r 48000 -t alsa default recording.flac silence 1 0.1 1% 1 1.5 1%'
@@ -37,7 +37,7 @@ def speech():
 
 	rospy.init_node('gspeech')
 	pubs = rospy.Publisher('filename', String)
-	pubc = rospy.Publisher('command_message', _VoiceCommand.VoiceCommand);
+	pubc = rospy.Publisher('command_message', VoiceCommand);
 	args2 = shlex.split(cmd2)
 
 	while not rospy.is_shutdown():
@@ -55,11 +55,11 @@ def speech():
 			print data
 			print "*****************************\n"
 			if data == "stop" or data == "halt":
-				x = _VoiceCommand.VoiceCommand()
-				x.commandCode = 4
+				x = VoiceCommand()
+				VoiceCommand.commandCode = 4
 				pubc.publish(x)
 			else:
-				filename= subprocess.Popen(["perl", "/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/scrape.pl", data], stdout=subprocess.PIPE).communicate()
+				filename= subprocess.Popen(["perl", "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/scrape.pl", data], stdout=subprocess.PIPE).communicate()
 				filename=filename[0].rstrip('\n')
 				pubs.publish(String(filename))
 				print String(filename), confidence
