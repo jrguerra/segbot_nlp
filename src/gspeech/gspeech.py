@@ -59,7 +59,7 @@ def speech():
 				VoiceCommand.commandCode = 4
 				pubc.publish(x)
 			else:
-				filename= subprocess.Popen(["perl", "/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/scrape.pl", data], stdout=subprocess.PIPE).communicate()
+				filename= subprocess.Popen(["perl", "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/gspeech/scrape.pl", data], stdout=subprocess.PIPE).communicate()
 				filename=filename[0].rstrip('\n')
 				pubs.publish(String(filename))
 				print String(filename), confidence
