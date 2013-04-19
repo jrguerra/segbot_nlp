@@ -33,6 +33,21 @@
   *	@date		2013-04-03
   *	Beta, Added most of Direct object support
   * and added cardinal support
+  *	@version	1.01.00
+  *	@date		2013-04-15
+  *	Gerund support and for verbbal Particle "back"
+  * added.
+  *	@version	1.01.01
+  *	@date		2013-04-18
+  *	Added support for "by" preposition
+  *	@version	1.01.02
+  *	@date		2013-04-18
+  *	Added support for "you" in "before" and "after"
+  * prepositions.
+  *	@version	1.01.03
+  *	@date		2013-04-18
+  *	Added support for preposition "in"
+  * ex. "move in the right direction"
 **/
 #include "Interpreter.h"
 #include <iostream>
@@ -49,7 +64,7 @@ using namespace std;
 
 //all of our wonderfully annoying statics
 std::map<std::string, fullCommand> Interpreter::commandMap;
-static std::map<std::string, fullCommand> gerundReductionMap;
+std::map<std::string, std::string> Interpreter::gerundReductionMap;
 std::map<std::string, Interpreter::CommandAugment> Interpreter::adverbAugmentMap;
 std::map<std::string, Interpreter::CommandAugment> Interpreter::locAugmentMap;
 std::map<std::string, Interpreter::CommandAugment> Interpreter::relLocAugmentMap;
@@ -57,6 +72,8 @@ std::map<std::string, Interpreter::Conversion> Interpreter::conversionFactorMap;
 std::vector<bool> Interpreter::statusState;
 reducedCommand Interpreter::commandReduction[FC_numFullCommands];
 std::set<std::string> Interpreter::ignoredWords;
+std::map<std::string, Interpreter::CommandAugment> Interpreter::qualifiedAdjectives;
+std::set<std::string> Interpreter::ignoredAdjectives;
 
 //all special case definitions:
 //handles "right now" case
@@ -134,7 +151,7 @@ class AroundSpecial:public SpecialCase{
             if( command.dir != D_noSet ){
                 return 0;
             }
-            command.dir = D_turnDefault;
+            command.aroundSet = 1;
             return 1;
         }
         static SpecialCase* get(){ return &aroundCase; }
@@ -144,9 +161,61 @@ class AroundSpecial:public SpecialCase{
 };
 AroundSpecial AroundSpecial::aroundCase;
 
+class BackSpecial:public SpecialCase{
+    protected:
+        BackSpecial(){}
+
+    public:
+        virtual bool execute( CommandVector& command, NLP::LinguisticTree::Iterator& wordIter ){
+            if( command.baseType == FC_dance ) return 1;
+            command.baseType = FC_goBack;
+            return 0;
+        }
+        static BackSpecial* get(){ return &backcase; }
+
+    private:
+        static BackSpecial backcase;
+};
+BackSpecial BackSpecial::backcase;
+
+class AdjectiveSpecial:public SpecialCase{
+    protected:
+        AdjectiveSpecial( const char* word):word(word){
+        }
+
+        const char* word;
+
+    public:
+        virtual bool execute( CommandVector& command, NLP::LinguisticTree::Iterator& wordIter ){
+            //first get the next noun
+            NLP::LinguisticTree::Iterator noun = wordIter.getNextWord();
+            while( noun != wordIter.getEnd() ){
+                if( (*noun)->getType() == NLP::noun ){
+                    break;
+                }
+            }
+            if( noun == wordIter.getEnd() ){
+                return 0;
+            }
+            if( word != NULL ){
+                if( !strcmp( word, NLP::LinguisticTree::getText( noun ) ) ){
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        static SpecialCase* getDirection(){ return &directionSpecial; }
+
+    private:
+        static AdjectiveSpecial directionSpecial;
+};
+
+AdjectiveSpecial AdjectiveSpecial::directionSpecial("direction");
+
 //function controls
 CommandVector::CommandVector( fullCommand baseType, const char* commandWord ):baseType(baseType),trueType(Interpreter::reduce(baseType)),
-    distance(FLOAT_NOSET),angle(FLOAT_NOSET),dir(D_noSet),loc(L_noSet),repetitions(REP_NOSET),commandWord(commandWord){}
+    distance(FLOAT_NOSET),angle(FLOAT_NOSET),dir(D_noSet),loc(L_noSet),repetitions(REP_NOSET),aroundSet(0),commandWord(commandWord){}
 
 std::ostream& operator<<( std::ostream& out, CommandVector& command ){
     out<<command.commandWord<<std::endl;
@@ -174,6 +243,20 @@ void Interpreter::init(){
     commandMap["approach"] = FC_goLocation;
     commandMap["find"] = FC_goLocation;
     commandMap["return"] = FC_goBack;
+    //Gerund reduction initialization
+    gerundReductionMap["turning"] = "turn";
+    gerundReductionMap["rotating"] = "rotate";
+    gerundReductionMap["spinning"] = "spin";
+    gerundReductionMap["going"] = "go";
+    gerundReductionMap["traveling"] = "travel";
+    gerundReductionMap["advancing"] = "advance";
+    gerundReductionMap["heading"] = "head";
+    gerundReductionMap["dancing"] = "dance";
+    gerundReductionMap["celebrating"] = "celebrate";
+    gerundReductionMap["boogieing"] = "boogie";
+    gerundReductionMap["approaching"] = "approach";
+    gerundReductionMap["finding"] = "find";
+    gerundReductionMap["returning"] = "return";
 
     //command reduction initialization
     commandReduction[FC_move] = RC_move;
@@ -197,10 +280,11 @@ void Interpreter::init(){
     adverbAugmentMap["thrice"] = CommandAugment( D_noChange, L_noChange, 3 );
     adverbAugmentMap["around"] = CommandAugment( AroundSpecial::get() );
     adverbAugmentMap["ahead"] = CommandAugment( D_forward, L_noChange );
+    adverbAugmentMap["back"] = CommandAugment( BackSpecial::get() );
     //locationAugment initialization
-    locAugmentMap["wall"] = CommandAugment( D_noChange, L_wall );
-    locAugmentMap["bookcase"] = CommandAugment( D_noChange, L_bookcase );
-    locAugmentMap["hallway"] = CommandAugment( D_noChange, L_hallway );
+    locAugmentMap["Germany"] = CommandAugment( D_noChange, L_wall );
+    locAugmentMap["Japan"] = CommandAugment( D_noChange, L_bookcase );
+    locAugmentMap["Mexico"] = CommandAugment( D_noChange, L_hallway );
     //relative location augment initialization
     relLocAugmentMap["port"] = CommandAugment( D_left, L_noChange );
     relLocAugmentMap["left"] = CommandAugment( D_left, L_noChange );
@@ -228,6 +312,12 @@ void Interpreter::init(){
     ignoredWords.insert("swiftly");
     ignoredWords.insert("slowly");
     ignoredWords.insert("sluggishly");
+    //Adjective initialization;
+    qualifiedAdjectives["right"] = CommandAugment( D_right, L_noChange, REP_NOCHANGE, AdjectiveSpecial::getDirection() );
+    qualifiedAdjectives["left"] = CommandAugment( D_left, L_noChange, REP_NOCHANGE, AdjectiveSpecial::getDirection() );
+    qualifiedAdjectives["forward"] = CommandAugment( D_forward, L_noChange, REP_NOCHANGE, AdjectiveSpecial::getDirection() );
+    qualifiedAdjectives["backward"] = CommandAugment( D_backward, L_noChange, REP_NOCHANGE, AdjectiveSpecial::getDirection() );
+
 }
 
 bool Interpreter::isInit(){
@@ -296,7 +386,7 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
         current++;
         command++;
         //interpret the phrase elements
-        interpretPhraseElements( *temp, *tempCommand );
+        interpretPhraseElements( *temp, tempCommand, commandList );
         //if, for any reason the command was invalidated remove from list
         if( tempCommand->baseType == FC_error ){
             if( statusState[error] ){
@@ -318,9 +408,13 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
             case FC_move:
                 //if location is set both distance and angle are invalid
                 //ex. "move 5 degrees to the chair" "move 5 meters to the chair"
+                //"move left to the chair"
                 //althought the second command might be valid, it is currently not supported
                 if( currentCommand->loc != L_noSet ){
                     if( currentCommand->distance != FLOAT_NOSET || currentCommand->angle != FLOAT_NOSET ){
+                        invalid = 1;
+                    }
+                    if( currentCommand->dir != D_noSet ){
                         invalid = 1;
                     }
                 }
@@ -411,6 +505,24 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
             commandList.erase( currentCommand );
         }
     }
+    //first rogue word handler:
+    NLP::LinguisticTree::Iterator subClause = tree.begin();
+    while( subClause != tree.end() ){
+        subClause = subClause.getLastChild();
+        if( getType( subClause ) == NLP::subClause ){
+            break;
+        }
+    }
+    if( !commandList.empty() ){
+        if( getType( subClause ) == NLP::subClause ){
+            list<CommandVector>::iterator lastCommand = commandList.end();
+            lastCommand--;
+            interpretPrepositionPhrase( subClause, lastCommand, commandList );
+            if( lastCommand->baseType == FC_error ){
+                commandList.erase( lastCommand );
+            }
+        }
+    }
     //set defaults for commands that are not invalidated
     for( command = commandList.begin(); command != commandList.end(); command++ ){
         switch( command->baseType ){
@@ -462,9 +574,6 @@ std::list<CommandVector> Interpreter::interpret( NLP::LinguisticTree& tree ){
 
 std::list<NLP::LinguisticTree::Iterator> Interpreter::getCommands( NLP::LinguisticTree::Iterator root ){
     std::list<NLP::LinguisticTree::Iterator> potentialCommandWordList;
-    //if an invalid iterator was given
-    if( *root == NULL ) return potentialCommandWordList;
-    if( (*root)->getType() != NLP::root ) return potentialCommandWordList;
     //recursive call
     for( unsigned int i = 0; i < root.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator child = root.getChild(i);
@@ -489,6 +598,7 @@ fullCommand Interpreter::getCooresponding( const char* word ){
 bool Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potentialCommands ){
     for( unsigned int i = 0; i < current.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator child = current.getChild(i);
+        NLP::LinguisticTree::Iterator noun;
         switch( getType(child) ){
             case NLP::verbBase:
             case NLP::verbPresent:
@@ -502,13 +612,16 @@ bool Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std:
             //DEBUG: curently testing this new blocker out
             case NLP::nounPhrase:
                 //if we've found a subjective noun
-                if( getType(current) == NLP::sentence ){
+                noun = child.getFirstChild();
+                cout<<NLP::LinguisticTree::getText(noun)<<endl;
+                if( getType(current) == NLP::sentence && strcmp( NLP::LinguisticTree::getText(noun), "you" ) ){
                     //we know there are no commands
                     if( statusState[error] ){
                         cerr<<"Subjective noun found, sentence is not a command"<<endl;
                     }
                     return 0;
                 }
+                break;
             default:
                 break;
         }
@@ -516,18 +629,18 @@ bool Interpreter::depthCommandFind( NLP::LinguisticTree::Iterator& current, std:
     return 1;
 }
 
-void Interpreter::interpretPhraseElements( NLP::LinguisticTree::Iterator& word, CommandVector& command ){
+void Interpreter::interpretPhraseElements( NLP::LinguisticTree::Iterator& word, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
     //grab the parent verb phrase
     NLP::LinguisticTree::Iterator directParent = word.getParent();
     //Go through all the phrases
     for( unsigned int i = 0; i < directParent.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator currentPhrase = directParent.getChild(i);
         if( currentPhrase == word ) continue;
-        interpretPhrase( currentPhrase, command );
+        interpretPhrase( currentPhrase, command, commandList );
     }
 }
 
-void Interpreter::interpretPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
     switch( getType(phrase) ){
         //interpret adverbs and particles
         case NLP::advPhrase:
@@ -535,20 +648,20 @@ void Interpreter::interpretPhrase( NLP::LinguisticTree::Iterator& phrase, Comman
         //just in case of misclassification
         case NLP::adjPhrase:
         case NLP::verbPhrase:
-            interpretAdverbPhrase( phrase, command );
+            interpretAdverbPhrase( phrase, command, commandList );
             break;
         case NLP::prepPhrase:
-            interpretPrepositionPhrase( phrase, command );
+            interpretPrepositionPhrase( phrase, command, commandList );
             break;
         case NLP::nounPhrase:
-            interpretDirectObject( phrase, command );
+            interpretDirectObject( phrase, command, commandList );
             break;
         default:
             break;
     }
 }
 
-void Interpreter::interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
     for( unsigned int i = 0; i < phrase.getNumChildren(); ++i ){
         NLP::LinguisticTree::Iterator child = phrase.getChild(i);
         CommandAugment* currentAugment = NULL;
@@ -559,16 +672,18 @@ void Interpreter::interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, 
             case NLP::adjective:
             case NLP::verbPastPart:
             case NLP::preposition:
-                if( !interpretAdverb( child, command, currentAugment ) ){
+                if( !interpretAdverb( child, *command, currentAugment ) ){
                     return;
                 }
                 break;
             //if nested needs to be evaluated:
             case NLP::advPhrase:
             case NLP::adjPhrase:
-                interpretAdverbPhrase( child, command );
+                interpretAdverbPhrase( child, command, commandList );
             case NLP::nounPhrase:
-                interpretDirectObject( child, command );
+                interpretDirectObject( child, command, commandList );
+            case NLP::prepPhrase:
+                interpretPrepositionPhrase( child, command, commandList );
             default:
                 //TODO: handle unrecognized types
                 break;
@@ -576,19 +691,19 @@ void Interpreter::interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, 
         //check to see if we caught an Augment
         if( currentAugment != NULL ){
             //check to make sure it executes:
-            if( !currentAugment->augment( command, child ) ){
+            if( !currentAugment->augment( *command, child ) ){
                 //if it fails the command is erroneous:
                 if( statusState[error] ){
                     cerr<<"Augmentation failed. Parameter redundancy detected."<<endl;
                 }
-                invalidate( command );
+                invalidate( *command );
                 return;
             }
         }
     }
 }
 
-void Interpreter::interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
     //first child is always the preposition:
     //TODO: Try to find a counter-example
     NLP::LinguisticTree::Iterator child = phrase.getFirstChild();
@@ -596,28 +711,52 @@ void Interpreter::interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phr
     //want to replace if else block with a map later:
     if( !strcmp( "to", preposition ) ){
         //if it is a to then we have a location
-        if( command.baseType == FC_goLocation ){
+        if( command->baseType == FC_goLocation ){
             //if the command is a direct object location type like "find" or "approach"
             //the command is invalidated i.e. "find to the chair" doesn't make sense.
             if( statusState[error] ){
                 cerr<<"invalid preposition \"to\" found in command of type GoTo"<<endl;
             }
-            invalidate(command);
+            invalidate( *command);
             return;
         }
         child = child.getNextSibling();
-        interpretLocation( child, command );
+        interpretLocation( child, command, commandList );
+    }else if( !strcmp( "after", preposition ) ){
+        NLP::LinguisticTree::Iterator nextWord = child.getNextWord();
+        child = child.getNextSibling();
+        if( !strcmp( "you", NLP::LinguisticTree::getText( nextWord ) ) ){
+            interpretSubClause( child, command, commandList, 0 );
+        }else{
+            interpretGerunds( child, command, commandList, 0 );
+        }
+    }else if( !strcmp( "before", preposition ) ){
+        child = child.getNextSibling();
+        NLP::LinguisticTree::Iterator nextWord = child.getNextWord();
+        if( !strcmp( "you", NLP::LinguisticTree::getText( nextWord ) ) ){
+            interpretSubClause( child, command, commandList, 1 );
+        }else{
+            interpretGerunds( child, command, commandList, 1 );
+        }
+    }else if( !strcmp("by", preposition ) ){
+        child = child.getNextSibling();
+        interpretBy( child, command, commandList );
+    }else if( !strcmp("in", preposition ) ){
+        child = child.getNextSibling();
+        interpretIn( child, command, commandList );
     }else{
-        invalidate( command );
+        invalidate( *command );
         if( statusState[error] ){
             cerr<<"Unrecognized preposition \""<<preposition<<"\". Invalidating Command"<<endl;
         }
     }
 }
 
-void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, bool fromPreposition ){
+void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+    bool fromPreposition ){
+
     if( getType(phrase) != NLP::nounPhrase ){
-        invalidate( command );
+        invalidate( *command );
         if( statusState[error] ){
             cerr<<"Attempt to gather location from non-type Noun Phrase. Invalidating Command."<<endl;
         }
@@ -633,6 +772,7 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
             case NLP::pluralNoun:
             //possible misclassifications
             case NLP::adjective:
+
                 try{
                     //if it is an location grab it's augment
                     currentAugment = &locAugmentMap.at( NLP::LinguisticTree::getText(child) );
@@ -649,7 +789,7 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
                         if( statusState[error] ){
                             cerr<<"Invalidating location noun \""<<NLP::LinguisticTree::getText(child)<<"\". Invalidating Command."<<endl;
                         }
-                        invalidate( command );
+                        invalidate( *command );
                         return;
                     }
                 }
@@ -658,12 +798,12 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
             case NLP::nounPhrase:
             //or phrase misclassification
             case NLP::adjPhrase:
-                interpretAdverbPhrase( child, command );
+                interpretAdverbPhrase( child, command, commandList );
                 break;
             case NLP::cardinalNum:
                 //accidental inclusion of cardinal
-                if( !interpretCardinal( phrase, command, i ) ){
-                    invalidate( command );
+                if( !interpretCardinal( phrase, command, commandList, i ) ){
+                    invalidate( *command );
                     return;
                 }else{
                     //since phrase was finished by interpretCardinal
@@ -675,19 +815,19 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
                     if( statusState[error] ){
                         cerr<<"Warning: Unsupported type "<<getType(child)<<" in location interpretation."<<endl;
                     }
-                    invalidate( command );
+                    invalidate( *command );
                     return;
                 }
                 break;
         }
         if( currentAugment != NULL ){
             //check to make sure it executes:
-            if( !currentAugment->augment( command, child ) ){
+            if( !currentAugment->augment( *command, child ) ){
                 //if it fails the command is erroneous:
                 if( statusState[error] ){
                     cerr<<"Augmentation failed. Parameter redundancy detected."<<endl;
                 }
-                invalidate( command );
+                invalidate( *command );
                 return;
             }
         }
@@ -695,21 +835,23 @@ void Interpreter::interpretLocation( NLP::LinguisticTree::Iterator& phrase, Comm
 
 }
 
-void Interpreter::interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, CommandVector& command ){
+void Interpreter::interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
     //behaviour changes based on full type
-    if( command.baseType == FC_goLocation ){
-        interpretLocation( phrase, command, 0  );
+    if( command->baseType == FC_goLocation ){
+        interpretLocation( phrase, command, commandList, 0  );
     }else{
         //if it's not a cardinal for non goto
-        if( !interpretCardinal( phrase, command ) ){
+        if( !interpretCardinal( phrase, command, commandList ) ){
             //for now invalidate, but there is still some work to be done
             //for ex. "go home", "return home", "head home", but "move home" doesn't work
-            invalidate( command );
+            invalidate( *command );
         }
     }
 }
 
-bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, unsigned int startingIndex ){
+bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+    unsigned int startingIndex ){
+
     bool isSet = 0;
     float value = FLOAT_NOSET;
     //helper for pulling floating point from text
@@ -723,7 +865,7 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
             //just incase an adverb or adjective "fell" into the noun phrase
             case NLP::adverb:
             case NLP::adjective:
-                if( !interpretAdverb( child, command, currentAugment ) ){
+                if( !interpretAdverb( child, *command, currentAugment ) ){
                    return 0;
                 }
                 break;
@@ -753,7 +895,7 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
                 }catch( std::out_of_range oor ){
                     //if it is not a conversion check to see if it is a misclassified adverb
                     //ex. "rotate right"
-                    if( !interpretAdverb( child, command, currentAugment ) ){
+                    if( !interpretAdverb( child, *command, currentAugment ) ){
                         return 0;
                     }
                 }
@@ -767,7 +909,7 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
                         return 0;
                     }
                     //otherwise convert
-                    if( !currentConversion->convert( value, command ) ){
+                    if( !currentConversion->convert( value, *command ) ){
                         if( statusState[error] ){
                             cerr<<"Invalid Conversion attempt due to redundancy"<<endl;
                         }
@@ -780,7 +922,7 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
             //example: "move 2 meters 3 times"
             case NLP::nounPhrase:
                 //if interpretation failed.
-                if( !interpretCardinal( child, command ) ){
+                if( !interpretCardinal( child, command, commandList ) ){
                     return 0;
                 }
                 break;
@@ -795,7 +937,7 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
         }
         if( currentAugment != NULL ){
             //check to make sure it executes:
-            if( !currentAugment->augment( command, child ) ){
+            if( !currentAugment->augment( *command, child ) ){
                 //if it fails the command is erroneous:
                 if( statusState[error] ){
                     cerr<<"Augmentation failed. Parameter redundancy detected."<<endl;
@@ -812,6 +954,249 @@ bool Interpreter::interpretCardinal( NLP::LinguisticTree::Iterator& phrase, Comm
         return 0;
     }
     return 1;
+}
+
+void Interpreter::interpretGerunds( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command,
+    std::list<CommandVector>& commandList, bool isBefore ){
+
+    //This should all look familiar,
+    //first grab the potential gerund command words
+    std::list<NLP::LinguisticTree::Iterator> gerundWordList = getGerunds( phrase );
+
+    if( gerundWordList.empty() ){
+        if( statusState[error] ){
+            cerr<<"Expected Gerund in PrepositionalPhrase, invalidating Command";
+        }
+        invalidate( *command );
+        return;
+    }
+
+    //create a commandList for the gerunds
+    std::list<CommandVector> gerundList;
+    for( std::list<NLP::LinguisticTree::Iterator>::iterator i = gerundWordList.begin();
+        i != gerundWordList.end(); ++i ){
+        std::string word;
+        fullCommand fc_type;
+
+        try{
+            word = gerundReductionMap.at( NLP::LinguisticTree::getText(*i) );
+            fc_type = commandMap.at(word);
+        }catch( std::out_of_range oor ){
+            if( statusState[error] ){
+                cerr<< "Invalid gerund \""<<NLP::LinguisticTree::getText(*i)<<
+                    "\" found in preposition phrase, invalidating command"<<endl;
+            }
+            invalidate( *command );
+            return;
+        }
+        gerundList.push_back( CommandVector( fc_type, word.c_str() ) );
+    }
+
+    std::list<NLP::LinguisticTree::Iterator>::iterator current = gerundWordList.begin();
+    std::list<CommandVector>::iterator gerund = gerundList.begin();
+    while( current != gerundWordList.end() ){
+        //get temporary copies
+        std::list<NLP::LinguisticTree::Iterator>::iterator temp = current;
+        std::list<CommandVector>::iterator tempCommand = gerund;
+        //update iterators
+        current++;
+        gerund++;
+        //interpret the phrase elements
+        interpretPhraseElements( *temp, tempCommand, gerundList );
+        //if, for any reason the command was invalidated remove from list
+        if( tempCommand->baseType == FC_error ){
+            if( statusState[error] ){
+                cerr<<"Removing Gerund."<<endl;
+            }
+            gerundWordList.erase(temp);
+            gerundList.erase(tempCommand);
+
+            //TODO::Potentially invalidate the entire command.
+        }
+    }
+
+    if( !isBefore ){
+        commandList.insert( command, gerundList.begin(), gerundList.end() );
+    }else{
+        command++;
+        commandList.insert( command, gerundList.begin(), gerundList.end() );
+        command--;
+
+    }
+}
+
+void Interpreter::interpretSubClause( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+    bool isBefore ){
+
+    //This should all look familiar,
+    //first grab the potential command words
+    std::list<NLP::LinguisticTree::Iterator> partCommandWordList = getCommands( phrase );
+
+    if( partCommandWordList.empty() ){
+        if( statusState[error] ){
+            cerr<<"Expected Commands in PrepositionalPhrase, invalidating Command";
+        }
+        invalidate( *command );
+        return;
+    }
+
+    //create a commandList for the gerunds
+    std::list<CommandVector> partCommandList;
+    for( std::list<NLP::LinguisticTree::Iterator>::iterator i = partCommandWordList.begin();
+        i != partCommandWordList.end(); ++i ){
+        fullCommand fc_type;
+
+        try{
+            fc_type = commandMap.at( NLP::LinguisticTree::getText( *i ) );
+        }catch( std::out_of_range oor ){
+            if( statusState[error] ){
+                cerr<< "Invalid command \""<<NLP::LinguisticTree::getText(*i)<<
+                    "\" found in preposition phrase, invalidating command"<<endl;
+            }
+            invalidate( *command );
+            return;
+        }
+        partCommandList.push_back( CommandVector( fc_type, NLP::LinguisticTree::getText( *i ) ) );
+    }
+
+    std::list<NLP::LinguisticTree::Iterator>::iterator current = partCommandWordList.begin();
+    std::list<CommandVector>::iterator currentCommand = partCommandList.begin();
+    while( current != partCommandWordList.end() ){
+        //get temporary copies
+        std::list<NLP::LinguisticTree::Iterator>::iterator temp = current;
+        std::list<CommandVector>::iterator tempCommand = currentCommand;
+        //update iterators
+        current++;
+        currentCommand++;
+        //interpret the phrase elements
+        interpretPhraseElements( *temp, tempCommand, partCommandList );
+        //if, for any reason the command was invalidated remove from list
+        if( tempCommand->baseType == FC_error ){
+            if( statusState[error] ){
+                cerr<<"Removing Gerund."<<endl;
+            }
+            partCommandWordList.erase(temp);
+            partCommandList.erase(tempCommand);
+
+            //TODO::Potentially invalidate the entire command.
+        }
+    }
+
+    if( !isBefore ){
+        commandList.insert( command, partCommandList.begin(), partCommandList.end() );
+    }else{
+        command++;
+        commandList.insert( command, partCommandList.begin(), partCommandList.end() );
+        command--;
+
+    }
+
+}
+
+void Interpreter::interpretBy( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
+    std::list<NLP::LinguisticTree::Iterator> potentialGerund = getGerunds( phrase );
+    if( potentialGerund.size() != 1 ){
+        invalidate( *command );
+        if( statusState[error] ){
+            cerr<<"Expected only one gerund in \"by\" position"<<endl;
+        }
+        return;
+    }
+    fullCommand commandType = FC_error;
+    try{
+        commandType = commandMap.at( gerundReductionMap.at( NLP::LinguisticTree::getText( potentialGerund.back() ) ) );
+    }catch( std::out_of_range oor ){
+        if( statusState[error] ){
+            cerr<<"Unrecognized gerund in \"by\" position. Invalidating command"<<endl;
+        }
+        invalidate(*command);
+    }
+    if( commandType != FC_move && commandType != FC_turn ){
+        cerr<<"Unrecognized gerund augment in \"by\" position"<<endl;
+        invalidate( *command );
+    }
+    command->aroundSet = 0;
+    interpretPhraseElements( potentialGerund.back(), command, commandList );
+}
+
+std::list<NLP::LinguisticTree::Iterator> Interpreter::getGerunds( NLP::LinguisticTree::Iterator phrase ){
+    std::list<NLP::LinguisticTree::Iterator> potentialGerundList;
+    //if an invalid iterator was given:
+    if( *phrase == NULL ) return potentialGerundList;
+    if( (*phrase)->getType() != NLP::sentence ) return potentialGerundList;
+    gerundCommandFind( phrase, potentialGerundList );
+    return potentialGerundList;
+}
+
+bool Interpreter::gerundCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potententialGerund ){
+    for( unsigned int i = 0 ; i < current.getNumChildren(); ++i ){
+        NLP::LinguisticTree::Iterator child = current.getChild(i);
+        switch( getType(child) ){
+            case NLP::verbGerund:
+                potententialGerund.push_back(child);
+                break;
+            case NLP::verbPhrase:
+                if( !gerundCommandFind( child, potententialGerund ) )
+                    return 0;
+                break;
+            case NLP::nounPhrase:
+                //always look for subjective nouns
+                if( getType( current ) == NLP::sentence ){
+                    if( statusState[error] ){
+                        cerr<<"Subjective noun found in prepositional phrase, error"<<endl;
+                    }
+                    potententialGerund.clear();
+                    return 0;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return 1;
+}
+
+void Interpreter::interpretIn( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList ){
+    //alright so we should be in the noun phrase.
+    for( unsigned int i = 0; i < phrase.getNumChildren(); ++i ){
+        NLP::LinguisticTree::Iterator child = phrase.getChild(i);
+        CommandAugment* augment = NULL;
+        switch( getType(child ) ){
+            case NLP::determiner:
+                break;
+            case NLP::adjective:
+                try{
+                    augment = &qualifiedAdjectives.at( NLP::LinguisticTree::getText(child) );
+                }catch( std::out_of_range oor ){
+                    if( statusState[error] ){
+                        cerr<<"unrecognized adjective \""<<NLP::LinguisticTree::getText( child )<<"\" inside preposition \"in\""<<endl;
+                    }
+                    invalidate( *command );
+                    return;
+                }
+                break;
+            case NLP::noun:
+                if( strcmp( NLP::LinguisticTree::getText(child), "direction" ) ){
+                    if( statusState[error] ){
+                        cerr<<"unrecognized noun \""<<NLP::LinguisticTree::getText( child )<<"\" inside preposition \"in\""<<endl;
+                    }
+                    invalidate( *command );
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+        if( augment != NULL ){
+            if( !augment->augment( *command, child ) ){
+                if( statusState[error] ){
+                    cerr<<"Augmentation of \""<<NLP::LinguisticTree::getText( child )<<"\" failed inside preposition \"in\""<<endl;
+                }
+                invalidate( *command );
+                return;
+            }
+        }
+    }
 }
 
 bool Interpreter::interpretAdverb( NLP::LinguisticTree::Iterator& word, CommandVector& command, CommandAugment*& augment ){
@@ -854,9 +1239,9 @@ bool Interpreter::CommandAugment::augment( CommandVector& command, NLP::Linguist
         }
     }
     //if the direction is changed
-    if( dir != D_noChange ){
+    if( dir != D_noChange  ){
         //same as before
-        if( command.dir != D_noSet ){
+        if( command.dir != D_noSet || command.aroundSet ){
             return false;
         }
         command.dir = dir;

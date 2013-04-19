@@ -6,7 +6,7 @@
       <sentence id="1">
         <tokens>
           <token id="1">
-            <word>go</word>
+            <word>Go</word>
             <lemma>go</lemma>
             <CharacterOffsetBegin>0</CharacterOffsetBegin>
             <CharacterOffsetEnd>2</CharacterOffsetEnd>
@@ -22,70 +22,59 @@
             <NER>O</NER>
           </token>
           <token id="3">
-            <word>go</word>
-            <lemma>go</lemma>
+            <word>testing</word>
+            <lemma>testing</lemma>
             <CharacterOffsetBegin>7</CharacterOffsetBegin>
-            <CharacterOffsetEnd>9</CharacterOffsetEnd>
-            <POS>VB</POS>
-            <NER>O</NER>
-          </token>
-          <token id="4">
-            <word>left</word>
-            <lemma>left</lemma>
-            <CharacterOffsetBegin>10</CharacterOffsetBegin>
             <CharacterOffsetEnd>14</CharacterOffsetEnd>
-            <POS>RB</POS>
+            <POS>NN</POS>
             <NER>O</NER>
           </token>
         </tokens>
-        <parse>(ROOT (S (VP (VP (VB go)) (CC and) (VP (VB go) (ADVP(RB left)))))) </parse>
+        <parse>(ROOT (S (VP (VB Go) (NP (CC and) (NN testing)))))</parse>
         <dependencies type="basic-dependencies">
           <dep type="root">
             <governor idx="0">ROOT</governor>
-            <dependent idx="1">go</dependent>
+            <dependent idx="1">Go</dependent>
           </dep>
           <dep type="cc">
-            <governor idx="1">go</governor>
+            <governor idx="3">testing</governor>
             <dependent idx="2">and</dependent>
           </dep>
-          <dep type="conj">
-            <governor idx="1">go</governor>
-            <dependent idx="3">go</dependent>
-          </dep>
-          <dep type="advmod">
-            <governor idx="3">go</governor>
-            <dependent idx="4">left</dependent>
+          <dep type="dobj">
+            <governor idx="1">Go</governor>
+            <dependent idx="3">testing</dependent>
           </dep>
         </dependencies>
         <dependencies type="collapsed-dependencies">
           <dep type="root">
             <governor idx="0">ROOT</governor>
-            <dependent idx="1">go</dependent>
+            <dependent idx="1">Go</dependent>
           </dep>
-          <dep type="conj_and">
-            <governor idx="1">go</governor>
-            <dependent idx="3">go</dependent>
+          <dep type="cc">
+            <governor idx="3">testing</governor>
+            <dependent idx="2">and</dependent>
           </dep>
-          <dep type="advmod">
-            <governor idx="3">go</governor>
-            <dependent idx="4">left</dependent>
+          <dep type="dobj">
+            <governor idx="1">Go</governor>
+            <dependent idx="3">testing</dependent>
           </dep>
         </dependencies>
         <dependencies type="collapsed-ccprocessed-dependencies">
           <dep type="root">
             <governor idx="0">ROOT</governor>
-            <dependent idx="1">go</dependent>
+            <dependent idx="1">Go</dependent>
           </dep>
-          <dep type="conj_and">
-            <governor idx="1">go</governor>
-            <dependent idx="3">go</dependent>
+          <dep type="cc">
+            <governor idx="3">testing</governor>
+            <dependent idx="2">and</dependent>
           </dep>
-          <dep type="advmod">
-            <governor idx="3">go</governor>
-            <dependent idx="4">left</dependent>
+          <dep type="dobj">
+            <governor idx="1">Go</governor>
+            <dependent idx="3">testing</dependent>
           </dep>
         </dependencies>
       </sentence>
     </sentences>
   </document>
 </root>
+

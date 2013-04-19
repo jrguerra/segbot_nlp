@@ -23,9 +23,12 @@ my $URLtoPostTo = "http://nlp.stanford.edu:8080/corenlp/";
 
 my $input = $ARGV[0];
 
+my $listener = `rosrun sound_play say.py "$input"`;
+
 if ($input =~ /^robot(.+)$/i || $input =~ /^carlton(.+)$/i || $input =~ /^please(.+)$/i) {
 	$input = $1;
 }
+
 $input = "Go and $input";
 
 $input =~ s/\*/times/g;
@@ -35,6 +38,7 @@ $input =~ s/(\w)\n(\w)/$1 return $2/g;
 $input =~ s/\n(\w)/return $1/g;
 $input =~ s/(\w)\n/$1 return/g;
 $input =~ s/\n/return/g;
+$input =~ s/to meters/2 meters/g;
 
 ##print "$input\n";
 

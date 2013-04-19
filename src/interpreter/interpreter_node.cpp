@@ -24,7 +24,11 @@ void chatterCallback(const std_msgs::String::ConstPtr& msg) {
   std::list<CommandVector> commands = Interpreter::interpret(tree);
   ROS_INFO("** Interpreter Interpreted Valid Tree");
   std::cerr << commands.size() << '\n';
+  if (commands.size() <= 0) {
+	system("rosrun sound_play say.py \"I do not understand what that means. Please repeat that or say it another way.\"");
   
+  }
+
   for (std::list<CommandVector>::iterator i = commands.begin(); i != commands.end(); ++i) {
     segbot_nlp::VoiceCommand c;
     c.commandCode = i->trueType;

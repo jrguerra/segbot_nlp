@@ -9,9 +9,9 @@ int main(int argc, char **argv) {
   ros::Publisher pub = n.advertise<std_msgs::String>("/filename", 1000);
   
   std_msgs::String msg;
-  msg.data = "/nishome/nlpros/ros/rosbuild_ws/segbot_nlp/src/debug/test.xml";
+  msg.data = "/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/test.xml";
   while (ros::ok()) {
-    int result = system("perl /nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/lti6.pl");
+    int result = system("perl /home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/lti6.pl");
     pub.publish(msg);
     //ros::spin();
   }

@@ -5,6 +5,7 @@ use strict;
 ## SCRAPER ##
 my $URLtoPostTo = "http://nlp.stanford.edu:8080/corenlp/";
 
+print "Type in your command:\n";
 my $input = <STDIN>;
 
 $input = "go and $input";
@@ -44,7 +45,7 @@ if ($Page->is_success) {
 	$parseseg =~ s/\n//sg;
 	$output =~ s/<parse>.*<\/parse>/$parseseg/sg;
 	$output = $output."\n";
-	$name = "/nishome/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/test.xml";
+	$name = "/home/nlpros/ros/rosbuild_ws/segbot/segbot_nlp/src/debug/test.xml";
 	open my $FILE, ">", $name;
 	print $FILE $output;
 	close $FILE;

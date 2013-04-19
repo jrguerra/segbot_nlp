@@ -21,6 +21,12 @@
   *	Added internal classes for conversion factors
   * inside interpretter. Also added conversion map
   * and Cardinal Number function.
+  *	@version	1.00.00
+  *	@date		2013-04-15
+  *	Added Gerund Functions
+  *	@version	1.00.01
+  *	@date		2013-04-18
+  *	added functionality for more prepositions.
 **/
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
@@ -33,7 +39,7 @@
 #include <iostream>
 
 enum fullCommand{ FC_move, FC_turn, FC_goLocation, FC_goBack, FC_dance, FC_numFullCommands, FC_error };
-enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_error, RC_stop };
+enum reducedCommand{ RC_move, RC_goBack, RC_dance, RC_numReducedCommands, RC_error };
 enum direction{ D_noSet, D_turnDefault,D_moveDefault, D_left, D_right, D_forward, D_backward, D_numDirection, D_noChange };
 enum location{ L_noSet, L_wall, L_bookcase, L_hallway, L_default, L_numLocation, L_noChange };
 
@@ -49,6 +55,7 @@ class CommandVector{
         direction dir;
         location loc;
         int repetitions;
+        bool aroundSet;
 
         const char* commandWord;
 
@@ -115,8 +122,8 @@ class Interpreter{
 
         //reduces command words to their full command enumeration
         static std::map<std::string, fullCommand> commandMap;
-        //reduces command gerund forms to their full command enumeration
-        static std::map<std::string, fullCommand> gerundReductionMap;
+        //reduces command gerund forms to their base command words
+        static std::map<std::string, std::string> gerundReductionMap;
         //checks for validity and behavior of adverbs
         static std::map<std::string, CommandAugment> adverbAugmentMap;
         //checks for validity and behavior of location nouns
@@ -131,6 +138,10 @@ class Interpreter{
         static reducedCommand commandReduction[FC_numFullCommands];
         //ignored words set (words that dont affect or invalidate commands
         static std::set<std::string> ignoredWords;
+        //special adjectives for "in" type preposition
+        static std::map<std::string, CommandAugment> qualifiedAdjectives;
+        //ignored adjectives
+        static std::set<std::string> ignoredAdjectives;
 
 
     public:
@@ -145,19 +156,35 @@ class Interpreter{
         //grabs potential command words from the tree
         static std::list<NLP::LinguisticTree::Iterator> getCommands( NLP::LinguisticTree::Iterator root );
         //breakdown the information
-        static void interpretPhraseElements( NLP::LinguisticTree::Iterator& word, CommandVector& command );
+        static void interpretPhraseElements( NLP::LinguisticTree::Iterator& word, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
         //breakdown helper function
-        static void interpretPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
         //breakdown for adverb phrases
-        static void interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretAdverbPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
         //breakdown for interpretting prepositional phrase
-        static void interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretPrepositionPhrase( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
         //breakdown for interpretting a location noun phrase
-        static void interpretLocation( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, bool fromPreposition = 1 );
+        static void interpretLocation( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+            bool fromPreposition = 1 );
         //breakdown for interpretting direct object
-        static void interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, CommandVector& command );
+        static void interpretDirectObject( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
         //breakdown for cardinal matching pairs
-        static bool interpretCardinal( NLP::LinguisticTree::Iterator& phrase, CommandVector& command, unsigned int startingIndex = 0 );
+        static bool interpretCardinal( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+            unsigned int startingIndex = 0 );
+
+        static void interpretGerunds( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+            bool isBefore = 0 );
+
+        static void interpretSubClause( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList,
+            bool isBefore = 0 );
+
+        static void interpretBy( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
+
+        static void interpretIn( NLP::LinguisticTree::Iterator& phrase, std::list<CommandVector>::iterator command, std::list<CommandVector>& commandList );
+
+        static bool gerundCommandFind( NLP::LinguisticTree::Iterator& current, std::list<NLP::LinguisticTree::Iterator>& potententialGerund );
+
+        static std::list<NLP::LinguisticTree::Iterator> getGerunds( NLP::LinguisticTree::Iterator phrase );
 
         //breakdown of individual adverb:
         static bool interpretAdverb( NLP::LinguisticTree::Iterator& word, CommandVector& command, CommandAugment*& augment );

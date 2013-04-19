@@ -58,8 +58,9 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
         for (int j = 0; j < numTimes; j ++) {
   	switch (opcode) {
 	  	case RC_move:
+			ROS_INFO("Location was %d and L_noSet is %d", location, L_noSet);
 			if (location != L_noSet) {
-                          newGoal = createGoal(MAP_FRAME, LocationPoints[location].x, LocationPoints[location].y, 0.0, 1.0);
+                          newGoal = createGoal(MAP_FRAME, LocationPoints[location - 1].x, LocationPoints[location - 1].y, 0.0, 1.0);
 			  GoalFifo.push(newGoal);
                         } else {
                           int numAngleTurns = (int) (angle / 20);
@@ -109,14 +110,21 @@ void messageHandle(const segbot_nlp::VoiceCommand::ConstPtr& msg) {
                         break;
 
                 case RC_dance:
-                        newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 1.0, 0.0);
+                        newGoal = createGoal(ROBOT_FRAME, 0.8, 0.0, calcZ(180, 0), calcW(180, 0));
                         GoalFifo.push(newGoal);
                         
-                        newGoal = createGoal(ROBOT_FRAME, -1.0, 0.0, 1.0, 0.0);
+                        newGoal = createGoal(ROBOT_FRAME, -0.8, 0.0, calcZ(180, 0), calcW(180, 0));
                         GoalFifo.push(newGoal);
                 
-                        newGoal = createGoal(ROBOT_FRAME, 1.0, 0.0, 1.0, 0.0);
+                        newGoal = createGoal(ROBOT_FRAME, 0.8, 0.0, calcZ(45, 0), calcW(45, 0));
                         GoalFifo.push(newGoal);
+
+                        newGoal = createGoal(ROBOT_FRAME, -0.8, 0.0, calcZ(180, 0), calcW(180, 0));
+                        GoalFifo.push(newGoal);
+                
+                        newGoal = createGoal(ROBOT_FRAME, 0.8, 0.0, calcZ(45, 0), calcW(45, 0));
+                        GoalFifo.push(newGoal);
+			system("rosrun sound_play say.py \"Let's boogie. Weeee. \"");
  
                         break;
 
@@ -161,18 +169,24 @@ int main(int argc, char** argv){
 		ROS_INFO("** Command Module: Sending Goal");
 	
 		ac.sendGoal(goal);
+		ac.waitForResult(ros::Duration(25.0));
+		actionlib::SimpleClientGoalState state = ac.getState();
+		while (state == actionlib::SimpleClientGoalState::ACTIVE) {
+			ROS_INFO("** Command Module:: Goal is Active");
+			ac.waitForResult(ros::Duration(5.0));
+			state = ac.getState();
+		}
 
-		ac.waitForResult();
-
-		if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+		if (state == actionlib::SimpleClientGoalState::SUCCEEDED) {
 			ROS_INFO("** Command Module: Goal Succeeded");
                         SentCommands.push_back(goal);
                         GoalFifo.pop();
+			//system("rosrun sound_play say.py \"Done. What next.\"");
 		} else {
-			ROS_INFO("** Command Module: Failure! Clearing the Fifo");
+			ROS_INFO("** Command Module: Failure! STATE: %s", state.toString().c_str());
 		        while (! GoalFifo.empty()) { GoalFifo.pop(); }
+			system("rosrun sound_play say.py \"Sorry, it looks like something is in the way. Can you move it for me.\"");
                 }
-
 	}
 
 	ros::spinOnce();

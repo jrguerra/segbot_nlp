@@ -27,7 +27,12 @@
   * the string that holds linguisticType be of dynamic size
   * so no more BUFFER OVERFLOW if something else goes wrong.
   * Hopefully, the last fix
-  *
+  *	@version	1.00.04
+  *	@date		2013-04-12
+  *	Added support for ROOT type dependencies.
+  *	@version	1.00.05
+  *	@date		2013-04-18
+  *	Added getLastChild
 **/
 #include "LinguisticTree.h"
 #include "LinguisticElement.h"
@@ -120,16 +125,20 @@ NLP::LinguisticTree::LinguisticTree( const char* filename ){
             pugi::xml_node governor = depend.first_child();
             pugi::xml_node dependent = governor.next_sibling();
 
-            int governorID = governor.first_attribute().as_int(0) + (sentences[ currentSentenceID ]).getFirst() - 1;
-            int dependentID = dependent.first_attribute().as_int(0) + (sentences[ currentSentenceID ]).getFirst() - 1;
+            if( governor.first_attribute().as_int(0) != 0 ){
+                int governorID = governor.first_attribute().as_int(0) + (sentences[ currentSentenceID ]).getFirst() - 1;
+                int dependentID = dependent.first_attribute().as_int(0) + (sentences[ currentSentenceID ]).getFirst() - 1;
 
-            //store the dependencies in their elements
-            words[governorID]->addGoverned( dependencies.size() );
-            words[dependentID]->addDependent( dependencies.size() );
 
-            //store the dependency in the tree
-            dependencies.push_back( Dependency( identification, governorID, dependentID ) );
+                if( governorID != -1 ){
+                    //store the dependencies in their elements
+                    words[governorID]->addGoverned( dependencies.size() );
+                    words[dependentID]->addDependent( dependencies.size() );
 
+                    //store the dependency in the tree
+                    dependencies.push_back( Dependency( identification, governorID, dependentID ) );
+                }
+            }
             //grab the next dependency
             depend = depend.next_sibling();
         }
@@ -501,6 +510,10 @@ NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getFirstChild(){
 NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getChild( int index ){
     if( node == NULL ) return NLP::LinguisticTree::Iterator( tree );
     return NLP::LinguisticTree::Iterator( node->getSelectChild( index ), tree );
+}
+
+NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getLastChild(){
+    return getChild( getNumChildren() - 1 );
 }
 
 NLP::LinguisticTree::Iterator NLP::LinguisticTree::Iterator::getParent(){

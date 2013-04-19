@@ -17,7 +17,9 @@
   *	@version	1.00.01
   *	@date		2013-03-30
   *	added NLP::LT::Node::getType()
-  *
+  *	@version	1.00.02
+  *	@date		2013-04-18
+  *	added NLP::LT::Interpreter getLastChild()
 **/
 #ifndef LINGUISTICTREE_H
 #define LINGUISTICTREE_H
@@ -164,6 +166,7 @@ namespace NLP{
                     Iterator getPrevSibling();
                     Iterator getFirstChild();
                     Iterator getChild(int index);
+                    Iterator getLastChild();
                     Iterator getParent();
                     int getParentIndex(){
                         return node->getParentIndex();
